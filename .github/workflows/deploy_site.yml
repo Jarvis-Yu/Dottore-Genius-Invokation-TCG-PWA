@@ -22,7 +22,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Build
-      runs: flet publish main.py --assets assets/
+      run: flet publish main.py --assets assets/
 
     - uses: actions/upload-artifact@master
       with:
