@@ -1,5 +1,4 @@
 from __future__ import annotations
-import asyncio
 from enum import Enum
 
 import flet as ft
@@ -29,8 +28,6 @@ class DgisimApp():
             self.navigate(route)
         self._context.on_current_route_changed = on_context_route_changed
 
-        asyncio.run(self.run())
-
     @property
     def context(self) -> AppContext:
         return self._context
@@ -57,14 +54,3 @@ class DgisimApp():
             return self._views[route](self._context)
         assert Route.NOT_FOUND in self._views
         return self._views[Route.NOT_FOUND](self._context)
-
-    async def run(self):
-        asyncio.create_task(self.auto_refresh())
-        while True:
-            await asyncio.sleep(0x7fffffff)
-
-    async def auto_refresh(self):
-        return
-        while True:
-            self._page.update()
-            await asyncio.sleep(0.04)
