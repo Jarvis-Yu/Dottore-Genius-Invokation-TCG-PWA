@@ -41,6 +41,8 @@ jobs:
         name: page
         path: dist
     - uses: actions/configure-pages@v1
+      with:
+        path: dist
     - uses: actions/upload-pages-artifact@v1
       with:
         path: dist
