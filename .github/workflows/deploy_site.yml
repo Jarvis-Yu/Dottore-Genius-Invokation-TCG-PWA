@@ -22,7 +22,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Build
-      run: flet publish main.py --assets assets/
+      run: flet publish main.py --assets assets/ --base-url Dottore-Genius-Invokation-TCG-PWA
 
     - uses: actions/upload-artifact@master
       with:
@@ -34,6 +34,14 @@ jobs:
     name: deploy
     runs-on: ubuntu-latest
     needs: build
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
     - uses: actions/download-artifact@master
@@ -47,4 +55,4 @@ jobs:
       with:
         path: dist
     - id: deployment
-      uses: actions/deploy-pages@main
+      uses: actions/deploy-pages@v2
