@@ -10,25 +10,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-      - name: Set up Python 3.10.11
-        uses: actions/setup-python@v3
-        with:
-          python-version: '3.10.11'
+    - name: Set up Python 3.10.11
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.10.11'
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
 
-      - name: Build
-        runs: flet publish main.py --assets assets/
+    - name: Build
+      runs: flet publish main.py --assets assets/
 
-      - uses: actions/upload-artifact@master
-        with:
-          name: page
-          path: dist
-          if-no-files-found: error
+    - uses: actions/upload-artifact@master
+      with:
+        name: page
+        path: dist
+        if-no-files-found: error
 
   deploy:
     name: deploy
@@ -36,13 +36,13 @@ jobs:
     needs: build
 
     steps:
-      - uses: actions/download-artifact@master
-        with:
-          name: page
-          path: dist
-      - uses: actions/configure-pages@v1
-      - uses: actions/upload-pages-artifact@v1
-        with:
-          path: dist
-      - id: deployment
-        uses: actions/deploy-pages@main
+    - uses: actions/download-artifact@master
+      with:
+        name: page
+        path: dist
+    - uses: actions/configure-pages@v1
+    - uses: actions/upload-pages-artifact@v1
+      with:
+        path: dist
+    - id: deployment
+      uses: actions/deploy-pages@main
