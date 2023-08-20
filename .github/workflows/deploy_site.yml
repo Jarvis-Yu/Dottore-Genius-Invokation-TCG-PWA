@@ -2,7 +2,6 @@ on:
   push:
     # branches:
     #   - release
-    #   - master
 
 jobs:
   build:
@@ -34,6 +33,7 @@ jobs:
     name: deploy
     runs-on: ubuntu-latest
     needs: build
+    if: github.ref == 'refs/heads/release'
 
     permissions:
       pages: write
