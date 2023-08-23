@@ -1,3 +1,5 @@
+<img style="float: right;" src="assets/icons/icon-192.png">
+
 # Dottore Genius Invokation TCG PWA
 
 A cross-platform simulated game application of Genius Invokation TCG based on [dgisim](https://github.com/Jarvis-Yu/Dottore-Genius-Invokation-TCG-Simulator).

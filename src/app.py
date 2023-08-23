@@ -3,6 +3,7 @@ from enum import Enum
 
 import flet as ft
 
+from .components.navigation_bar import NavBar
 from .context import AppContext
 from .pages.deck_page import DeckPage
 from .pages.game_page import GamePage
@@ -14,11 +15,12 @@ class DgisimApp():
     def __init__(self, page: ft.Page):
         self._context = AppContext(
             current_route=Route.GAME,
+            page=page,
         )
         self._page = page
         self._page.title = "Dottore GISim"
-        self._page.on_route_change = self._on_route_change_set_view
-        self._views: dict[Route, type[ft.View]] = {
+        self._page.navigation_bar = NavBar(context=self._context)
+        self._pages: dict[Route, type[ft.Stack]] = {
             Route.DECK: DeckPage,
             Route.GAME: GamePage,
             Route.NOT_FOUND: NotFoundPage,
@@ -26,31 +28,18 @@ class DgisimApp():
 
         def on_context_route_changed(route: Route) -> None:
             self.navigate(route)
-        self._context.on_current_route_changed = on_context_route_changed
-
-    @property
-    def context(self) -> AppContext:
-        return self._context
-
-    @property
-    def page(self) -> ft.Page:
-        return self._page
-
-    @property
-    def navigation_bar(self) -> ft.NavigationBar:
-        return self._navigation_bar
+        self._context.add_on_current_route_changed(on_context_route_changed)
 
     def navigate(self, route: Route) -> None:
-        self._page.go(route.value)
-
-    def _on_route_change_set_view(self, _: ft.RouteChangeEvent) -> None:
-        self._page.views.clear()
-        view = self._get_view_at_route(Route.find_route(self._page.route))
-        self._page.views.append(view)
+        # self._page.go(route.value)
+        self._page.controls.clear()
+        self._page.controls.append(self._get_page_at_route(route))
         self._page.update()
 
-    def _get_view_at_route(self, route: Route) -> ft.View:
-        if route in self._views:
-            return self._views[route](self._context)
-        assert Route.NOT_FOUND in self._views
-        return self._views[Route.NOT_FOUND](self._context)
+    def _get_page_at_route(self, route: Route) -> ft.Stack:
+        if route in self._pages:
+            print("get page at", route)
+            return self._pages[route](self._context)
+        assert Route.NOT_FOUND in self._pages
+        print("get page not found")
+        return self._pages[Route.NOT_FOUND](self._context)

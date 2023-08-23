@@ -3,6 +3,8 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Callable
 
+import flet as ft
+
 from .routes import Route
 
 
@@ -18,10 +20,12 @@ class AppContext:
     def __init__(
             self,
             current_route: Route,
+            page: ft.Page,
             settings: Settings = Settings(),
     ) -> None:
         self._current_route = current_route
-        self._on_curr_route_changed: Callable[[Route], None] = lambda _: None
+        self._on_curr_route_changed: set[Callable[[Route], None]] = set()
+        self._page = page
         self._settings = settings
 
     @property
@@ -33,16 +37,20 @@ class AppContext:
         if (self._current_route is new_route):
             return
         self._current_route = new_route
-        self._on_curr_route_changed(self._current_route)
+        for on_curr_route_changed in self._on_curr_route_changed:
+            on_curr_route_changed(self._current_route)
 
     @property
-    def on_current_route_changed(self) -> Route:
+    def on_current_route_changed(self) -> set[Callable[[Route], None]]:
         return self._on_curr_route_changed
 
-    @on_current_route_changed.setter
-    def on_current_route_changed(self, f: Callable[[Route], None]) -> None:
-        self._on_curr_route_changed = f
-        self._on_curr_route_changed(self._current_route)
+    def add_on_current_route_changed(self, f: Callable[[Route], None]) -> None:
+        f(self._current_route)
+        self._on_curr_route_changed.add(f)
+
+    @property
+    def page(self) -> ft.Page:
+        return self._page
 
     @property
     def settings(self) -> Settings:

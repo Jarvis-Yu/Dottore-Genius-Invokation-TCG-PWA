@@ -7,13 +7,13 @@ from ..routes import Route
 from ._shared_data.destinations import DESTINATIONS
 
 
-class NavBar(ft.NavigationBar):
+class NavRail(ft.NavigationRail):
     def __init__(self, context: AppContext, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._context = context
         self.bgcolor = context.settings.theme_colour
         self.destinations = [
-            ft.NavigationDestination(icon=dest.icon, label=dest.label)
+            ft.NavigationRailDestination(icon=dest.icon, selected_icon=dest.icon, label=dest.label)
             for dest in DESTINATIONS
         ]
         self.selected_index = self.find_index_by_route(self._context.current_route)
