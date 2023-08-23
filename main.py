@@ -1,4 +1,5 @@
 import flet as ft
+import dgisim
 
 from src.app import DgisimApp
 
@@ -10,5 +11,5 @@ def main(page: ft.Page):
 ft.app(
     target=main,
     assets_dir="assets",
-    view=ft.AppView.FLET_APP_WEB,
+    view=ft.AppView.WEB_BROWSER,
 )

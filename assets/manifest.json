@@ -1,6 +1,8 @@
 {
     "name": "Dottore Genius Invokation TCG Simulator",
     "short_name": "dgisim",
+    "start_url": ".",
+    "display": "standalone",
     "theme_color": "#6A8096",
     "background_color": "#56676E",
     "description": "Dottore Genius Invokation TCG Simulator App",

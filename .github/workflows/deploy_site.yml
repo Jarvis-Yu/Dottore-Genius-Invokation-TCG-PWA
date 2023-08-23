@@ -23,7 +23,7 @@ jobs:
     - name: Build
       run: flet publish main.py --assets assets/ --base-url Dottore-Genius-Invokation-TCG-PWA
 
-    - uses: actions/upload-artifact@master
+    - uses: actions/upload-artifact@v3
       with:
         name: page
         path: dist
@@ -44,14 +44,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-    - uses: actions/download-artifact@master
+    - uses: actions/download-artifact@v3
       with:
         name: page
         path: dist
-    # - uses: actions/configure-pages@v1
-    #   with:
-    #     path: dist
-    - uses: actions/upload-pages-artifact@v1
+    - uses: actions/upload-pages-artifact@v2
       with:
         path: dist
     - id: deployment
