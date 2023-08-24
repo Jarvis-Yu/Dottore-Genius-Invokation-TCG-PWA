@@ -20,6 +20,7 @@ class DgisimApp():
         self._page = page
         self._page.title = "Dottore GISim"
         self._page.navigation_bar = NavBar(context=self._context)
+        self._page.padding = 0
         self._pages: dict[Route, type[ft.Stack]] = {
             Route.DECK: DeckPage,
             Route.GAME: GamePage,
