@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import flet as ft
 
-from ..components.navigation_bar import NavBar
+from ..components.wip import WIP
 from ..context import AppContext
 from ..routes import Route
 
@@ -10,6 +10,6 @@ class GamePage(ft.Stack):
     def __init__(self, context: AppContext, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._context = context
-        context.page.bgcolor = context.settings.theme_colour_dark
+        context.page.bgcolor = context.settings.view_bg_colour
         self.expand = True
-        self.controls.append(ft.Text("Game"))
+        self.controls.append(WIP(context))

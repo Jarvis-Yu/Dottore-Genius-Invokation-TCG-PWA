@@ -11,14 +11,14 @@ class NavBar(ft.NavigationBar):
     def __init__(self, context: AppContext, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._context = context
-        self.bgcolor = context.settings.theme_colour
+        self.bgcolor = context.settings.nav_bar_colour
         self.destinations = [
             ft.NavigationDestination(icon=dest.icon, label=dest.label)
             for dest in DESTINATIONS
         ]
         self.selected_index = self.find_index_by_route(self._context.current_route)
         self.on_change = self.on_index_changed
-        context.add_on_current_route_changed(self.sync_destination)
+        context.on_current_route_changed.add(self.sync_destination)
 
     def find_index_by_route(self, route: Route) -> int:
         for dest in DESTINATIONS:
