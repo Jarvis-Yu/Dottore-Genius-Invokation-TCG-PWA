@@ -21,10 +21,10 @@ class DgisimApp():
         )
         self._context.on_orientation_changed_end.add(lambda _: page.update())
         self._page = page
-        self._page.title = "Dottore GISim"
         self._page.navigation_bar = NavBar(context=self._context)
-        self._page.padding = 0
         self._page.on_resize = self.on_resize
+        self._page.padding = 0
+        self._page.title = "Dottore GISim"
         self._pages: dict[Route, type[ft.Stack]] = {
             Route.DECK: DeckPage,
             Route.GAME: GamePage,

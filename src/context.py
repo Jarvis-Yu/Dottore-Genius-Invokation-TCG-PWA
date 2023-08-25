@@ -33,6 +33,16 @@ class Settings:
     nav_bar_colour: str = theme_colour
     normal_text_colour: str = "#FFFFFF"
     contrast_text_colour: str = "#000000"
+    button_style: ft.ButtonStyle = ft.ButtonStyle(
+        color = {
+            ft.MaterialState.HOVERED: contrast_text_colour,
+            ft.MaterialState.DEFAULT: normal_text_colour,
+        },
+        bgcolor = {
+            ft.MaterialState.HOVERED: theme_colour_light,
+            ft.MaterialState.DEFAULT: theme_colour
+        },
+    )
 
 
 # @dataclass(kw_only=True)
