@@ -26,15 +26,15 @@ class DgisimApp():
             Route.GAME: GamePage,
             Route.NOT_FOUND: NotFoundPage,
         }
+        self._safe_area = ft.SafeArea(expand=True)
+        self._page.controls.append(self._safe_area)
 
         def on_context_route_changed(route: Route) -> None:
             self.navigate(route)
         self._context.add_on_current_route_changed(on_context_route_changed)
 
     def navigate(self, route: Route) -> None:
-        # self._page.go(route.value)
-        self._page.controls.clear()
-        self._page.controls.append(self._get_page_at_route(route))
+        self._safe_area.content = self._get_page_at_route(route)
         self._page.update()
 
     def _get_page_at_route(self, route: Route) -> ft.Stack:
