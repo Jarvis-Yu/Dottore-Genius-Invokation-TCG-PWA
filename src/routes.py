@@ -5,6 +5,7 @@ from enum import Enum
 class Route(Enum):
     HOME = "/"
     GAME = "/game"
+    GAME_PLAY = "/game/play"
     DECK = "/deck"
     NOT_FOUND = "/not-found"
 

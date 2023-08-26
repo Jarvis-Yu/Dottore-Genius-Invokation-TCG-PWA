@@ -7,6 +7,7 @@ import flet as ft
 from .components.navigation_bar import NavBar
 from .context import AppContext, Orientation
 from .pages.deck_page import DeckPage
+from .pages.game.play_page import GamePlayPage
 from .pages.game_page import GamePage
 from .pages.not_found_page import NotFoundPage
 from .routes import Route
@@ -28,6 +29,7 @@ class DgisimApp():
         self._pages: dict[Route, type[ft.Stack]] = {
             Route.DECK: DeckPage,
             Route.GAME: GamePage,
+            Route.GAME_PLAY: GamePlayPage,
             Route.NOT_FOUND: NotFoundPage,
         }
         self._safe_area = ft.SafeArea(expand=True)

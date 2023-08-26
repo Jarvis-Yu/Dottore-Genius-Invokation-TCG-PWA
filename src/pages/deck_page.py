@@ -11,5 +11,6 @@ class DeckPage(ft.Stack):
         super().__init__(*args, **kwargs)
         self._context = context
         context.page.bgcolor = context.settings.view_bg_colour
+        context.page.navigation_bar.visible = True
         self.expand = True
         self.controls.append(WIP(context))

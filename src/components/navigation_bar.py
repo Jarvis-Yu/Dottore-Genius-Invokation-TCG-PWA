@@ -36,6 +36,7 @@ class NavBar(ft.NavigationBar):
         curr_index = self.find_index_by_route(route)
         if self.selected_index != curr_index:
             self.selected_index = curr_index
+            self._context.page.update()
 
     def on_index_changed(self, e) -> None:
         new_route = self.find_route_by_index(self.selected_index)

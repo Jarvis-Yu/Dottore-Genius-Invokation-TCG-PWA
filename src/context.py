@@ -2,9 +2,10 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 import flet as ft
+from dgisim import Pid
 
 from .routes import Route
 
@@ -34,18 +35,39 @@ class Settings:
     normal_text_colour: str = "#FFFFFF"
     contrast_text_colour: str = "#000000"
     button_style: ft.ButtonStyle = ft.ButtonStyle(
-        color = {
+        color={
             ft.MaterialState.HOVERED: contrast_text_colour,
             ft.MaterialState.DEFAULT: normal_text_colour,
         },
-        bgcolor = {
+        bgcolor={
             ft.MaterialState.HOVERED: theme_colour_light,
             ft.MaterialState.DEFAULT: theme_colour
         },
     )
 
 
-# @dataclass(kw_only=True)
+@dataclass(kw_only=True)
+class PlayerSettings:
+    type: Literal["P", "E"]
+
+
+@dataclass(kw_only=True)
+class GamePlaySettings:
+    primary_player: Pid
+    primary_settings: PlayerSettings
+    oppo_settings: PlayerSettings
+    completely_random: bool = False
+
+    @classmethod
+    def from_random_PVE(cls) -> None:
+        return GamePlaySettings(
+            primary_player=Pid.P1,
+            primary_settings=PlayerSettings(type="P"),
+            oppo_settings=PlayerSettings(type="E"),
+            completely_random=True,
+        )
+
+
 class AppContext:
     def __init__(
             self,
@@ -55,6 +77,7 @@ class AppContext:
             settings: Settings = Settings(),
     ) -> None:
         self._current_route = current_route
+        self._game_mode: None | GamePlaySettings = None
         self._on_curr_route_changed: set[Callable[[Route], None]] = AddSensitiveSet(
             lambda f: f(self._current_route)
         )
@@ -81,6 +104,15 @@ class AppContext:
             on_curr_route_changed(self._current_route)
 
     @property
+    def game_mode(self) -> GamePlaySettings:
+        assert self._game_mode is not None
+        return self._game_mode
+
+    @game_mode.setter
+    def game_mode(self, new_mode: GamePlaySettings) -> None:
+        self._game_mode = new_mode
+
+    @property
     def on_current_route_changed(self) -> set[Callable[[Route], None]]:
         return self._on_curr_route_changed
 
@@ -90,6 +122,8 @@ class AppContext:
 
     @orientation.setter
     def orientation(self, new_orientation: Orientation) -> None:
+        if self._orientation is new_orientation:
+            return
         self._orientation = new_orientation
         print("Orientation:", new_orientation.value)
         for f in self._on_orientation_changed:
