@@ -16,8 +16,8 @@ class GamePlayPage(ft.Stack):
         context.page.navigation_bar.visible = False
         self.expand = True
         self._common_content = ft.Stack(expand=True)
-        self.controls.append(WIP(context))
         self.controls.append(ft.Container(content=self._common_content, padding=10))
+        self.controls.append(ft.TransparentPointer(WIP(context)))
 
         def back_to_home(_: Any) -> None:
             context.current_route = Route.GAME
