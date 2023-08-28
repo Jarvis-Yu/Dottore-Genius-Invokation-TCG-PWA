@@ -5,7 +5,7 @@ from typing import Any
 import flet as ft
 
 from .components.navigation_bar import NavBar
-from .context import AppContext, Orientation
+from .context import AppContext, Orientation, Size
 from .pages.deck_page import DeckPage
 from .pages.game.play_page import GamePlayPage
 from .pages.game_page import GamePage
@@ -19,6 +19,7 @@ class DgisimApp():
             current_route=Route.GAME,
             orientation=Orientation.PORTRAIT,
             page=page,
+            reference_size=Size(page.width, page.height),
         )
         self._context.on_orientation_changed_end.add(lambda _: page.update())
         self._page = page
@@ -38,13 +39,15 @@ class DgisimApp():
         def on_context_route_changed(route: Route) -> None:
             self.navigate(route)
         self._context.on_current_route_changed.add(on_context_route_changed)
+        self._context.on_reference_size_changed_end.add(lambda _: self._page.update())
 
     def on_resize(self, _: ft.Page) -> None:
-        wh_ratio = self._page.window_width / self._page.window_height
+        wh_ratio = self._page.width / self._page.height
         if self._context.orientation is Orientation.LANDSCAPE and wh_ratio < 1:
             self._context.orientation = Orientation.PORTRAIT
         elif self._context.orientation is Orientation.PORTRAIT and wh_ratio > 1:
             self._context.orientation = Orientation.LANDSCAPE
+        self._context.reference_size = Size(self._page.width, self._page.height)
 
     def navigate(self, route: Route) -> None:
         self._safe_area.content = self._get_page_at_route(route)

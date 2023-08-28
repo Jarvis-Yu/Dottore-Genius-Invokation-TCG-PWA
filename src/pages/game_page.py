@@ -26,6 +26,12 @@ class GamePage(ft.Stack):
                 style=context.settings.button_style,
             ),
             ft.ElevatedButton(
+                text="Random EVE",
+                col=button_col,
+                on_click=self.goto_random_EVE,
+                style=context.settings.button_style,
+            ),
+            ft.ElevatedButton(
                 text="WIP",
                 col=button_col,
                 style=context.settings.button_style
@@ -35,4 +41,8 @@ class GamePage(ft.Stack):
 
     def goto_random_PVE(self, _: Any) -> None:
         self._context.game_mode = GamePlaySettings.from_random_PVE()
+        self._context.current_route = Route.GAME_PLAY
+
+    def goto_random_EVE(self, _: Any) -> None:
+        self._context.game_mode = GamePlaySettings.from_random_EVE()
         self._context.current_route = Route.GAME_PLAY

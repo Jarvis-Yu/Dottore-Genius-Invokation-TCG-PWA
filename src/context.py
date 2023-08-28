@@ -52,6 +52,7 @@ class Settings:
 @dataclass(kw_only=True)
 class PlayerSettings:
     type: Literal["P", "E"]
+    random_deck: bool = False
 
 
 @dataclass(kw_only=True)
@@ -65,10 +66,25 @@ class GamePlaySettings:
     def from_random_PVE(cls) -> None:
         return GamePlaySettings(
             primary_player=Pid.P1,
-            primary_settings=PlayerSettings(type="P"),
-            oppo_settings=PlayerSettings(type="E"),
+            primary_settings=PlayerSettings(type="P", random_deck=True),
+            oppo_settings=PlayerSettings(type="E", random_deck=True),
             completely_random=True,
         )
+
+    @classmethod
+    def from_random_EVE(cls) -> None:
+        return GamePlaySettings(
+            primary_player=Pid.P1,
+            primary_settings=PlayerSettings(type="E", random_deck=True),
+            oppo_settings=PlayerSettings(type="E", random_deck=True),
+            completely_random=True,
+        )
+
+
+@dataclass
+class Size:
+    x: int
+    y: int
 
 
 class AppContext:
@@ -77,6 +93,7 @@ class AppContext:
             current_route: Route,
             orientation: Orientation,
             page: ft.Page,
+            reference_size: Size,
             settings: Settings = Settings(),
     ) -> None:
         self._current_route = current_route
@@ -92,6 +109,13 @@ class AppContext:
             lambda f: f(self._orientation)
         )
         self._page = page
+        self._reference_size = reference_size
+        self._on_reference_size_changed: set[Callable[[Size], None]] = AddSensitiveSet(
+            lambda f: f(self._reference_size)
+        )
+        self._on_reference_size_changed_end: set[Callable[[Size], None]] = AddSensitiveSet(
+            lambda f: f(self._reference_size)
+        )
         self._settings = settings
 
     @property
@@ -145,6 +169,28 @@ class AppContext:
     @property
     def page(self) -> ft.Page:
         return self._page
+
+    @property
+    def reference_size(self) -> Size:
+        return self._reference_size
+
+    @reference_size.setter
+    def reference_size(self, new_size: Size) -> None:
+        if new_size == self._reference_size:
+            return
+        self._reference_size = new_size
+        for f in self._on_reference_size_changed:
+            f(new_size)
+        for f in self._on_reference_size_changed_end:
+            f(new_size)
+
+    @property
+    def on_reference_size_changed(self) -> set[Callable[[Size], None]]:
+        return self._on_reference_size_changed
+
+    @property
+    def on_reference_size_changed_end(self) -> set[Callable[[Size], None]]:
+        return self._on_reference_size_changed_end
 
     @property
     def settings(self) -> Settings:

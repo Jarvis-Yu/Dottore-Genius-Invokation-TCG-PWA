@@ -1,2 +1,2 @@
-dgisim==0.3.dev0
+dgisim==0.3.1
 flet==0.9.0
