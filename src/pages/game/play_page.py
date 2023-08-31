@@ -218,5 +218,6 @@ class GamePlayPage(ft.Stack):
     ) -> None | dm.GameStateMachine:
         if game_setting.primary_settings.type == "E" and game_setting.oppo_settings.type == "E":
             random_game = dm.GameState.from_default()
+            random_game = random_game.factory().mode(dm.mode.AllOmniMode()).build()
             return dm.GameStateMachine(random_game, RandomAgent(), RandomAgent())
         return None
