@@ -151,6 +151,8 @@ class GamePlayPage(ft.Stack):
         self._game_content.controls.append(zone_col)
 
         # fill data
+        half_width = (self._context.page.width - 20) / 2
+
         self_player = game_state.get_player(self._curr_home_pid)
         self_chars = self_player.get_characters()
         self_char_row = ft.Row(
@@ -161,6 +163,35 @@ class GamePlayPage(ft.Stack):
             alignment=ft.MainAxisAlignment.SPACE_EVENLY,
         )
         self_chars_zone.content.content = self_char_row
+        self_supports = self_player.get_supports()
+        self_support_row = ft.Row(
+            controls=[
+                self.support_component(game_state, self._curr_home_pid, support)
+                for support in self_supports
+            ],
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+        self_summons = self_player.get_summons()
+        self_summon_row = ft.Row(
+            controls=[
+                self.summon_component(game_state, self._curr_home_pid, summon)
+                for summon in self_summons
+            ],
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+        self_support_summon_zone.content.content = ft.Stack(
+            controls=[
+                ft.TransparentPointer(ft.Container(
+                    content=self_support_row,
+                    alignment=ft.alignment.center_left,
+                ), left=0),
+                ft.TransparentPointer(ft.Container(
+                    content=self_summon_row,
+                    alignment=ft.alignment.center_left,
+                ), left=half_width),
+            ]
+        )
+
         oppo_player = game_state.get_player(self._curr_home_pid.other())
         oppo_chars = oppo_player.get_characters()
         oppo_char_row = ft.Row(
@@ -171,13 +202,41 @@ class GamePlayPage(ft.Stack):
             alignment=ft.MainAxisAlignment.SPACE_EVENLY,
         )
         oppo_chars_zone.content.content = oppo_char_row
+        oppo_supports = oppo_player.get_supports()
+        oppo_support_row = ft.Row(
+            controls=[
+                self.support_component(game_state, self._curr_home_pid.other(), support)
+                for support in oppo_supports
+            ],
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+        oppo_summons = oppo_player.get_summons()
+        oppo_summon_row = ft.Row(
+            controls=[
+                self.summon_component(game_state, self._curr_home_pid.other(), summon)
+                for summon in oppo_summons
+            ],
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+        oppo_support_summon_zone.content.content = ft.Stack(
+            controls=[
+                ft.TransparentPointer(ft.Container(
+                    content=oppo_support_row,
+                    alignment=ft.alignment.center_left,
+                ), left=0),
+                ft.TransparentPointer(ft.Container(
+                    content=oppo_summon_row,
+                    alignment=ft.alignment.center_left,
+                ), left=half_width),
+            ]
+        )
 
     def character_component(
             self,
             game_state: dm.GameState,
             pid: dm.Pid,
             char: dm.Character,
-    ) -> ft.Container:
+    ) -> ft.TransparentPointer:
         max_height: float = self._context.reference_size.y * 0.21
         base_stack = ft.Stack(clip_behavior=ft.ClipBehavior.NONE)
         base = ft.Container(
@@ -211,7 +270,8 @@ class GamePlayPage(ft.Stack):
             content=ft.Column(
                 controls=[
                     ft.TransparentPointer(ft.Container(
-                        bgcolor=ft.colors.with_opacity(1 if i < char.get_energy() else 0.2, "yellow"),
+                        bgcolor=ft.colors.with_opacity(
+                            1 if i < char.get_energy() else 0.2, "yellow"),
                         border=ft.border.all(1, color="yellow"),
                         rotate=ft.transform.Rotate(math.pi / 4, alignment=ft.alignment.center),
                         width=max_height * 0.07,
@@ -233,7 +293,61 @@ class GamePlayPage(ft.Stack):
         base_stack.controls.append(ft.TransparentPointer(ft.Container(
             content=energy,
         ), top=max_height * 0.13, right=max_height * 0.037))
-        return base
+        return ft.TransparentPointer(base)
+
+    def support_component(
+            self,
+            game_state: dm.GameState,
+            pid: dm.Pid,
+            support: dm.Support,
+    ) -> ft.TransparentPointer:
+        max_height: float = self._context.reference_size.y * 0.07
+        max_width: float = (self._context.reference_size.x - 100) / 8
+        max_size = min(max_height, max_width)
+        base_stack = ft.Stack(clip_behavior=ft.ClipBehavior.NONE)
+        base = ft.Container(
+            content=base_stack,
+            bgcolor="white",
+            width=max_width,
+            height=max_height,
+        )
+        name = ft.Text(
+            value=f"{support.__class__.__name__}",
+            color="black",
+            size=max_size / 7,
+        )
+        base_stack.controls.append(ft.TransparentPointer(ft.Container(
+            content=name,
+            alignment=ft.alignment.center,
+        )))
+        return ft.TransparentPointer(base)
+
+    def summon_component(
+            self,
+            game_state: dm.GameState,
+            pid: dm.Pid,
+            summon: dm.Summon,
+    ) -> ft.TransparentPointer:
+        max_height: float = self._context.reference_size.y * 0.07
+        max_width: float = (self._context.reference_size.x - 100) / 8
+        max_size = min(max_height, max_width)
+        base_stack = ft.Stack(clip_behavior=ft.ClipBehavior.NONE)
+        base = ft.Container(
+            content=base_stack,
+            bgcolor="white",
+            width=max_width,
+            height=max_height,
+        )
+        name = ft.Text(
+            value=f"{summon.__class__.__name__}({summon.usages})",
+            color="black",
+            size=max_size / 7,
+        )
+        base_stack.controls.append(ft.TransparentPointer(ft.Container(
+            content=name,
+            alignment=ft.alignment.center,
+        )))
+        return ft.TransparentPointer(base)
 
     def build_game_state_machine_from_mode(
             self, game_setting: GamePlaySettings
