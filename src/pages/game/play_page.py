@@ -1,4 +1,5 @@
 from __future__ import annotations
+import math
 from typing import Any
 
 import flet as ft
@@ -44,7 +45,8 @@ class GamePlayPage(ft.Stack):
             )
             return
 
-        self._game_state_machine.step_until_phase(self._game_state_machine.get_game_state().get_mode().action_phase)
+        self._game_state_machine.step_until_phase(
+            self._game_state_machine.get_game_state().get_mode().action_phase)
 
         self._curr_home_pid = self._context.game_mode.primary_player
         self._context.on_reference_size_changed.add(self.rerender)
@@ -74,6 +76,7 @@ class GamePlayPage(ft.Stack):
                 style=self._context.settings.button_style,
             )
         )
+
         def step_game(_: Any) -> None:
             self._game_state_machine.auto_step()
             self._game_state_machine.one_step()
@@ -178,7 +181,7 @@ class GamePlayPage(ft.Stack):
         max_height: float = self._context.reference_size.y * 0.21
         base_stack = ft.Stack(clip_behavior=ft.ClipBehavior.NONE)
         base = ft.Container(
-            content=base_stack, #ft.Text(char.name(), color="black"),
+            content=base_stack,  # ft.Text(char.name(), color="black"),
             border=ft.border.all(1, color="black"),
             alignment=ft.alignment.center,
             width=max_height * 0.55,
@@ -192,17 +195,33 @@ class GamePlayPage(ft.Stack):
         card = ft.TransparentPointer(ft.Container(
             content=ft.Text(char.name(), color="black"),
             alignment=ft.alignment.center,
-            bgcolor="yellow",
+            bgcolor="white",
             width=max_height * 0.4,
             height=max_height * 0.6,
         ))
         hp = ft.TransparentPointer(ft.Container(
-            content=ft.Text(str(char.get_hp()), size=max_height*0.07),
+            content=ft.Text(str(char.get_hp()), size=max_height * 0.07),
             alignment=ft.alignment.center,
             bgcolor="red",
             border_radius=max_height,
             width=max_height * 0.15,
             height=max_height * 0.15,
+        ))
+        energy = ft.TransparentPointer(ft.Container(
+            content=ft.Column(
+                controls=[
+                    ft.TransparentPointer(ft.Container(
+                        bgcolor=ft.colors.with_opacity(1 if i < char.get_energy() else 0.2, "yellow"),
+                        border=ft.border.all(1, color="yellow"),
+                        rotate=ft.transform.Rotate(math.pi / 4, alignment=ft.alignment.center),
+                        width=max_height * 0.07,
+                        height=max_height * 0.07,
+                    ))
+                    for i in range(char.get_max_energy())
+                ],
+                spacing=max_height * 0.05,
+            ),
+            alignment=ft.alignment.top_center,
         ))
         base_stack.controls.append(ft.TransparentPointer(ft.Container(
             content=card,
@@ -211,6 +230,9 @@ class GamePlayPage(ft.Stack):
         base_stack.controls.append(ft.TransparentPointer(ft.Container(
             content=hp,
         ), top=max_height * 0.025))
+        base_stack.controls.append(ft.TransparentPointer(ft.Container(
+            content=energy,
+        ), top=max_height * 0.13, right=max_height * 0.037))
         return base
 
     def build_game_state_machine_from_mode(
