@@ -90,6 +90,8 @@ class QItem:
         height: int | None = None,
         width_pct: float | None = None,
         height_pct: float | None = None,
+        width_height_pct: float | None = None,
+        height_width_pct: float | None = None,
         expand: bool = False,
         align: QAlign | ft.Alignment | None = None,
         anchor: QAnchor | None = None,
@@ -106,6 +108,8 @@ class QItem:
         self.height = height
         self.width_pct = width_pct
         self.height_pct = height_pct
+        self.width_height_pct = width_height_pct
+        self.height_width_pct = height_width_pct
         self.expand = expand
         self.align = align if not isinstance(align, QAlign) else align.to_flet()
         self.anchor = anchor
@@ -121,6 +125,11 @@ class QItem:
             self.align is not None,
             self.expand,
         )), "Only one of anchor, align, or expand can be set"
+
+        self._frame = ft.Stack(
+            expand=True,
+            clip_behavior=self.clip,
+        )
 
         if self.parent is not None:
             self._init_according_to_parent()
@@ -145,6 +154,8 @@ class QItem:
         self.parent._add_child_item(self)
         self.inited = True
         for child in self.children:
+            if child.inited:
+                continue
             child._init_by_parent(self)
 
     def _init_according_to_ref_parent(self) -> None:
@@ -160,10 +171,6 @@ class QItem:
 
     def _init_internal_container(self) -> None:
         """ Init the internal container """
-        self._frame = ft.Stack(
-            expand=True,
-            clip_behavior=self.clip,
-        )
         if self.expand:
             self._container = ft.Container(
                 content=self._frame,
@@ -244,18 +251,29 @@ class QItem:
 
     def _recalc_size(self) -> None:
         """ Recalculate or init the size of this item """
+        ref_parent_width = self.ref_parent.width if self.ref_parent.width is not None else 0
+        ref_parent_height = self.ref_parent.height if self.ref_parent.height is not None else 0
+
         if self.width_pct is not None:
-            self.width = self.ref_parent.width * self.width_pct
+            self.width = ref_parent_width * self.width_pct
+            if self.height_width_pct is not None:
+                self.height = self.width * self.height_width_pct
         if self.height_pct is not None:
-            self.height = self.ref_parent.height * self.height_pct
+            self.height = ref_parent_height * self.height_pct
+            if self.width_height_pct is not None:
+                self.width = self.height * self.width_height_pct
 
         if self.anchor is not None:
-            ref_width = self.ref_parent.width - self.inset.left - self.inset.right
-            ref_height = self.ref_parent.height - self.inset.top - self.inset.bottom
+            ref_width = ref_parent_width - self.inset.left - self.inset.right
+            ref_height = ref_parent_height - self.inset.top - self.inset.bottom
             if self.anchor.left is not None and self.anchor.right is not None:
                 self.width = ref_width * (self.anchor.right - self.anchor.left)
+                if self.height_width_pct is not None:
+                    self.height = self.width * self.height_width_pct
             if self.anchor.top is not None and self.anchor.bottom is not None:
                 self.height = ref_height * (self.anchor.bottom - self.anchor.top)
+                if self.width_height_pct is not None:
+                    self.width = self.height * self.width_height_pct
 
             width_pct = self.width / ref_width if ref_width != 0 else 0
             height_pct = self.height / ref_height if ref_height != 0 else 0
@@ -271,8 +289,8 @@ class QItem:
             self.align = align.to_flet()
 
         if self.expand:
-            self.width = self.ref_parent.width
-            self.height = self.ref_parent.height
+            self.width = ref_parent_width
+            self.height = ref_parent_height
 
         self._on_resize()
 
