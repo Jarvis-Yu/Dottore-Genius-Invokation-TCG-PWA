@@ -289,9 +289,13 @@ class GamePlayPage(QPage):
                 ),
             ),
         )
-        char_card.add_flet_comp(
-            make_centre(ft.Text(char.name()))
-        )
+        char_card.add_flet_comp((
+            make_centre(ft.Text(char.name())),
+            ft.Image(
+                src=f"assets/char_cards/{char.name()}75.png",
+                fit=ft.ImageFit.FILL,
+            ),
+        ))
         char_card.add_children((
             hp_item := QItem(
                 object_name=f"char-{pid}-{char_id}-{char.name()}-health",
