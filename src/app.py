@@ -30,7 +30,7 @@ class DgisimApp():
         self._page.navigation_bar = NavBar(context=self._context)
         self._page.on_resize = self.on_resize
         self._pages: dict[Route, QPage] = {
-            # Route.DECK: DeckPage,
+            Route.DECK: DeckPage,
             Route.GAME: GamePage,
             # Route.GAME_PLAY: GamePlayPage,
             Route.NOT_FOUND: NotFoundPage,

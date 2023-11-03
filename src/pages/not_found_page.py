@@ -12,7 +12,8 @@ class NotFoundPage(QPage):
     def post_init(self, context: AppContext) -> None:
         self._context = context
         context.page.bgcolor = self._context.settings.view_bg_colour
-        context.page.navigation_bar = NavBar(context=self._context)
+        # context.page.navigation_bar = NavBar(context=self._context)
+        context.page.navigation_bar.visible = True
         self.inset = QInset(bottom=context.settings.nav_bar_height)
         self._recalc_size()
         self._update_internal_container_on_size()
