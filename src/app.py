@@ -32,7 +32,7 @@ class DgisimApp():
         self._pages: dict[Route, QPage] = {
             Route.DECK: DeckPage,
             Route.GAME: GamePage,
-            # Route.GAME_PLAY: GamePlayPage,
+            Route.GAME_PLAY: GamePlayPage,
             Route.NOT_FOUND: NotFoundPage,
         }
         self._root_item = QItem.init_page(self._page)

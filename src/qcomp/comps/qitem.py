@@ -270,6 +270,10 @@ class QItem:
                 align.y_pct = self.anchor.bottom - height_pct / 2
             self.align = align.to_flet()
 
+        if self.expand:
+            self.width = self.ref_parent.width
+            self.height = self.ref_parent.height
+
         self._on_resize()
 
     def _add_child_item(self, item: Self) -> None:
@@ -288,8 +292,9 @@ class QItem:
 
     def add_children(self, children: Sequence[Self] | Self) -> None:
         children = children if isinstance(children, Sequence) else (children,)
-        for child in children:
-            child._init_by_parent(self)
+        if self.inited:
+            for child in children:
+                child._init_by_parent(self)
 
     def add_flet_comp(self, comp: Sequence[Self] | ft.Control) -> None:
         if isinstance(comp, ft.Control):
@@ -334,4 +339,5 @@ class QItem:
         """
         root_item = QItem(expand=True, colour=colour)
         root_item._add_to_page(page)
+        root_item.inited = True
         return root_item

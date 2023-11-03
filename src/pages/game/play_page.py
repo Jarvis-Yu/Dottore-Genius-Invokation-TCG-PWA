@@ -3,65 +3,151 @@ import math
 from typing import Any
 
 import flet as ft
-import dgisim as dm
+import dgisim as ds
+from dgisim import support as dssp
+from dgisim import summon as dssm
+from dgisim import card as dscd
 from dgisim.agents import RandomAgent
 
 from ...components.wip import WIP
-from ...qcomp import QItem
+from ...qcomp import QItem, QAnchor
 from ...context import AppContext, GamePlaySettings, PlayerSettings
 from ...routes import Route
+from ..base import QPage
 
 
-class GamePlayPage(ft.Stack):
-    def __init__(self, context: AppContext, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class GamePlayPage(QPage):
+    def post_init(self, context: AppContext) -> None:
         self._context = context
         context.page.bgcolor = context.settings.view_bg_colour
         context.page.navigation_bar.visible = False
-        self.expand = True
-        self._game_content = ft.Stack(expand=True)
-        self._menu_content = ft.Stack(expand=True)
-        self.controls.append(ft.TransparentPointer(ft.Container(
-            content=self._game_content,
-            padding=10,
-        )))
-        self.controls.append(ft.TransparentPointer(ft.Container(
-            content=self._menu_content,
-            padding=10,
-        )))
+        self.add_children((
+            game_layer := QItem(
+                object_name="game-layer",
+                expand=True,
+            ),
+            menu_layer := QItem(
+                object_name="menu-layer",
+                expand=True,
+            ),
+        ))
+        self._game_layer = game_layer
+        print(self.object_name, f"{self.width=}")
+        print(self._game_layer.object_name, f"{self._game_layer.width=}")
+        self._menu_layer = menu_layer
+        self._menu_layer.add_flet_comp(ft.Row(
+            controls=[
+                top_right_col_menu := ft.Column(
+                    expand=True,
+                    horizontal_alignment=ft.CrossAxisAlignment.END,
+                    alignment=ft.MainAxisAlignment.START,
+                )
+            ],
+            expand=True,
+        ))
+        self._top_right_col_menu = top_right_col_menu
 
-        self._game_state_machine = self.build_game_state_machine_from_mode(context.game_mode)
+        self._button_exit = ft.IconButton(
+            icon=ft.icons.EXIT_TO_APP,
+            on_click=self._back_to_home,
+            style=context.settings.button_style,
+        )
+        self._top_right_col_menu.controls.append(self._button_exit)
 
-        if self._game_state_machine == None:
-            self.controls.append(WIP(context))
-            self._game_content.controls.append(
-                ft.TransparentPointer(ft.Container(
-                    content=ft.IconButton(
-                        icon=ft.icons.EXIT_TO_APP,
-                        on_click=self._back_to_home,
-                        style=context.settings.button_style,
-                    ),
-                    alignment=ft.alignment.top_right,
-                ))
-            )
-            return
-
-        self._game_state_machine.step_until_phase(
-            self._game_state_machine.get_game_state().get_mode().action_phase)
-
-        self._curr_home_pid = self._context.game_mode.primary_player
-        self._context.on_reference_size_changed.add(self.rerender)
+        # tmp code
+        self._home_pid = ds.Pid.P1
+        self._example_game_state = ds.GameState.from_default().factory().f_player1(
+            lambda p1: p1.factory().f_summons(
+                lambda ss: ss.update_summon(
+                    dssm.UshiSummon()
+                ).update_summon(
+                    dssm.OzSummon()
+                ).update_summon(
+                    dssm.OceanicMimicFrogSummon()
+                ).update_summon(
+                    dssm.ChainsOfWardingThunderSummon()
+                )
+            ).f_supports(
+                lambda ss: ss.update_support(
+                    dssp.LibenSupport(sid=1)
+                ).update_support(
+                    dssp.LiyueHarborWharfSupport(sid=2)
+                ).update_support(
+                    dssp.ChangTheNinthSupport(sid=3)
+                ).update_support(
+                    dssp.PaimonSupport(sid=4)
+                )
+            ).f_dice(
+                lambda _: ds.ActualDice.from_random(8, excepted_elems=set((
+                    ds.Element.PYRO,
+                    ds.Element.HYDRO,
+                    ds.Element.ELECTRO,
+                )))
+            ).f_hand_cards(
+                lambda hcs: ds.Cards({
+                    dscd.ProphecyOfSubmersion: 1,
+                    dscd.IHaventLostYet: 2,
+                    dscd.Starsigns: 1,
+                })
+            ).build()
+        ).f_player2(
+            lambda p1: p1.factory().f_summons(
+                lambda ss: ss.update_summon(
+                    dssm.AutumnWhirlwindSummon()
+                ).update_summon(
+                    dssm.BakeKurageSummon()
+                ).update_summon(
+                    dssm.CuileinAnbarSummon()
+                ).update_summon(
+                    dssm.SesshouSakuraSummon()
+                )
+            ).f_supports(
+                lambda ss: ss.update_support(
+                    dssp.NRESupport(sid=1)
+                ).update_support(
+                    dssp.KnightsOfFavoniusLibrarySupport(sid=2)
+                ).update_support(
+                    dssp.XudongSupport(sid=3)
+                ).update_support(
+                    dssp.ParametricTransformerSupport(sid=4)
+                )
+            ).f_dice(
+                lambda _: ds.ActualDice.from_random(8, excepted_elems=set((
+                    ds.Element.GEO,
+                    ds.Element.ANEMO,
+                    ds.Element.CRYO,
+                )))
+            ).f_hand_cards(
+                lambda hcs: ds.Cards({
+                    dscd.ElementalResonanceEnduringRock: 1,
+                    dscd.SumeruCity: 2,
+                    dscd.TheShrinesSacredShade: 1,
+                })
+            ).build()
+        ).build()
+        self.rerender()
 
     def _back_to_home(self, _: Any) -> None:
         self._context.current_route = Route.GAME
 
     def rerender(self, _: Any = None) -> None:
-        self.render_state(self._game_state_machine.get_game_state())
+        self.render_state(self._example_game_state)
 
-    def render_state(self, game_state: dm.GameState) -> None:
-        self._game_content.controls.clear()
-        self._menu_content.controls.clear()
+    def render_state(self, game_state: ds.GameState) -> None:
+        self._top_right_col_menu.controls.clear()
+        self._top_right_col_menu.controls.append(self._button_exit)
+        self._game_layer.clear()
 
+        self._game_layer.add_children((
+            self._card_zone          (0.005, 0.09, ds.Pid.P2, game_state),
+            self._support_summon_zone(0.105, 0.09, ds.Pid.P2, game_state),
+            self._char_zone          (0.205, 0.21, ds.Pid.P2, game_state),
+            self._char_zone          (0.425, 0.21, ds.Pid.P1, game_state),
+            self._support_summon_zone(0.645, 0.09, ds.Pid.P1, game_state),
+            self._card_zone          (0.745, 0.24, ds.Pid.P1, game_state),
+        ))
+
+        return
         # menu
         menu_col = ft.Column()
         self._menu_content.controls.append(
@@ -232,11 +318,56 @@ class GamePlayPage(ft.Stack):
             ]
         )
 
+    def _char_zone(
+            self, top_pct: float,
+            height_pct: float,
+            pid: ds.Pid,
+            game_state: ds.GameState,
+    ) -> QItem:
+        item = QItem(
+            object_name=f"char-zone-{pid}",
+            width_pct=1.0,
+            height_pct=height_pct,
+            anchor=QAnchor(left=0.0, top=top_pct),
+            border=ft.border.all(1, "black"),
+        )
+        return item
+
+    def _support_summon_zone(
+            self, top_pct: float,
+            height_pct: float,
+            pid: ds.Pid,
+            game_state: ds.GameState,
+    ) -> QItem:
+        item = QItem(
+            object_name=f"support-summon-zone-{pid}",
+            width_pct=1.0,
+            height_pct=height_pct,
+            anchor=QAnchor(left=0.0, top=top_pct),
+            border=ft.border.all(1, "black"),
+        )
+        return item
+
+    def _card_zone(
+            self, top_pct: float,
+            height_pct: float,
+            pid: ds.Pid,
+            game_state: ds.GameState,
+    ) -> QItem:
+        item = QItem(
+            object_name=f"card-zone-{pid}",
+            width_pct=1.0,
+            height_pct=height_pct,
+            anchor=QAnchor(left=0.0, top=top_pct),
+            border=ft.border.all(1, "black"),
+        )
+        return item
+
     def character_component(
             self,
-            game_state: dm.GameState,
-            pid: dm.Pid,
-            char: dm.Character,
+            game_state: ds.GameState,
+            pid: ds.Pid,
+            char: ds.Character,
     ) -> ft.TransparentPointer:
         max_height: float = self._context.reference_size.y * 0.21
         base_stack = ft.Stack(clip_behavior=ft.ClipBehavior.NONE)
@@ -298,9 +429,9 @@ class GamePlayPage(ft.Stack):
 
     def support_component(
             self,
-            game_state: dm.GameState,
-            pid: dm.Pid,
-            support: dm.Support,
+            game_state: ds.GameState,
+            pid: ds.Pid,
+            support: ds.Support,
     ) -> ft.TransparentPointer:
         max_height: float = self._context.reference_size.y * 0.07
         max_width: float = (self._context.reference_size.x - 100) / 8
@@ -325,9 +456,9 @@ class GamePlayPage(ft.Stack):
 
     def summon_component(
             self,
-            game_state: dm.GameState,
-            pid: dm.Pid,
-            summon: dm.Summon,
+            game_state: ds.GameState,
+            pid: ds.Pid,
+            summon: ds.Summon,
     ) -> ft.TransparentPointer:
         max_height: float = self._context.reference_size.y * 0.07
         max_width: float = (self._context.reference_size.x - 100) / 8
@@ -352,9 +483,9 @@ class GamePlayPage(ft.Stack):
 
     def build_game_state_machine_from_mode(
             self, game_setting: GamePlaySettings
-    ) -> None | dm.GameStateMachine:
+    ) -> None | ds.GameStateMachine:
         if game_setting.primary_settings.type == "E" and game_setting.oppo_settings.type == "E":
-            random_game = dm.GameState.from_default()
-            random_game = random_game.factory().mode(dm.mode.AllOmniMode()).build()
-            return dm.GameStateMachine(random_game, RandomAgent(), RandomAgent())
+            random_game = ds.GameState.from_default()
+            random_game = random_game.factory().mode(ds.mode.AllOmniMode()).build()
+            return ds.GameStateMachine(random_game, RandomAgent(), RandomAgent())
         return None
