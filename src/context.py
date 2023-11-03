@@ -32,6 +32,7 @@ class Settings:
     theme_colour_light: str = "#88B1Bf"
     view_bg_colour: str = theme_colour_dark
     nav_bar_colour: str = theme_colour
+    nav_bar_height: int = 70
     normal_text_colour: str = "#FFFFFF"
     contrast_text_colour: str = "#000000"
 

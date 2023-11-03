@@ -7,6 +7,7 @@ import dgisim as dm
 from dgisim.agents import RandomAgent
 
 from ...components.wip import WIP
+from ...qcomp import QItem
 from ...context import AppContext, GamePlaySettings, PlayerSettings
 from ...routes import Route
 

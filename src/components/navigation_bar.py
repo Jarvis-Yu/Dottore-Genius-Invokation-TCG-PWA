@@ -11,6 +11,7 @@ class NavBar(ft.NavigationBar):
     def __init__(self, context: AppContext, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._context = context
+        self.height = context.settings.nav_bar_height
         self.bgcolor = context.settings.nav_bar_colour
         self.destinations = [
             ft.NavigationDestination(icon=dest.icon, label=dest.label)
