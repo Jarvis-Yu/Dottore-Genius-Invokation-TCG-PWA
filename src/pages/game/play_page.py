@@ -177,12 +177,12 @@ class GamePlayPage(QPage):
         self._game_layer.clear()
 
         self._game_layer.add_children((
-            self._card_zone          (0.005, 0.09, ds.Pid.P2, game_state),
+            self._card_zone(0.005, 0.09, ds.Pid.P2, game_state),
             self._support_summon_zone(0.105, 0.09, ds.Pid.P2, game_state),
-            self._char_zone          (0.205, 0.22, ds.Pid.P2, game_state),
-            self._char_zone          (0.435, 0.22, ds.Pid.P1, game_state),
+            self._char_zone(0.205, 0.22, ds.Pid.P2, game_state),
+            self._char_zone(0.435, 0.22, ds.Pid.P1, game_state),
             self._support_summon_zone(0.665, 0.09, ds.Pid.P1, game_state),
-            self._card_zone          (0.765, 0.22, ds.Pid.P1, game_state),
+            self._card_zone(0.765, 0.22, ds.Pid.P1, game_state),
         ))
 
         return
@@ -274,7 +274,7 @@ class GamePlayPage(QPage):
                     children=(
                         aura_bar := QItem(
                             object_name=f"char-{pid}-{char_id}-{char.name()}-aura-bar",
-                            height_pct=0.13,
+                            height_pct=0.14,
                             width_pct=0.6,
                             anchor=QAnchor(left=0.2, top=0.0),
                         ),
@@ -311,7 +311,7 @@ class GamePlayPage(QPage):
                 QItem(
                     height_pct=energy_height,
                     width_height_pct=1.0,
-                    align=QAlign(x_pct=1.0, y_pct=(2 * energy - 1)*energy_height),
+                    align=QAlign(x_pct=1.0, y_pct=(2 * energy - 1) * energy_height),
                     colour=ft.colors.with_opacity(
                         1 if energy <= char.get_energy() else 0.2, "yellow"
                     ),
@@ -326,15 +326,31 @@ class GamePlayPage(QPage):
             ds.Element.CRYO: "#96D1DC",
             ds.Element.GEO: "#F6AD43",
         }
+        elem_name_map = {
+            ds.Element.PYRO: "pyro",
+            ds.Element.HYDRO: "hydro",
+            ds.Element.ANEMO: "anemo",
+            ds.Element.ELECTRO: "electro",
+            ds.Element.DENDRO: "dendro",
+            ds.Element.CRYO: "cryo",
+            ds.Element.GEO: "geo",
+        }
         aura_bar.add_flet_comp(
             aura_row := ft.Row(
                 controls=[
-                    QItem(
-                        ref_parent=aura_bar,
-                        height_pct=1.0,
-                        width_height_pct=1.0,
-                        colour=elem_colour_map[elem]
-                    ).root_component
+                    (
+                        elem_frame := QItem(
+                            ref_parent=aura_bar,
+                            height_pct=1.0,
+                            width_height_pct=1.0,
+                        ),
+                        elem_frame.add_flet_comp(
+                            ft.Image(
+                                src=f"assets/elem_icons/{elem_name_map[elem]}.png",
+                                fit=ft.ImageFit.FILL,
+                            )
+                        )
+                    )[0].root_component
                     for elem in char.get_elemental_aura()
                 ],
                 expand=True,
