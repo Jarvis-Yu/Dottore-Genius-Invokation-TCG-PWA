@@ -100,6 +100,7 @@ class QItem:
         colour: str = ft.colors.with_opacity(0, "#FFFFFF"),
         border: ft.Border | None = None,
         children: Sequence[Self] | Self = (),
+        flets: Sequence[ft.Control] | ft.Control = (),
     ):
         self.object_name = object_name
         self.parent = parent
@@ -135,6 +136,8 @@ class QItem:
             self._init_according_to_parent()
         elif self.ref_parent is not None:
             self._init_according_to_ref_parent()
+
+        self.add_flet_comp(flets)
 
     def _init_by_parent(self, parent: Self) -> None:
         """ Called by parent if this item is added as a child """
@@ -292,7 +295,7 @@ class QItem:
             self.width = ref_parent_width
             self.height = ref_parent_height
 
-        self._on_resize()
+        self._on_resized()
 
     def _add_child_item(self, item: Self) -> None:
         if item not in self.children:
@@ -333,12 +336,12 @@ class QItem:
         def on_resize(_: ft.ControlEvent) -> None:
             self.width = page.width - page.padding * 2
             self.height = page.height - page.padding * 2
-            self._on_resize()
+            self._on_resized()
             page.update()
 
         page.on_resize = on_resize
 
-    def _on_resize(self) -> None:
+    def _on_resized(self) -> None:
         for child in self.children:
             if not child.inited:
                 continue

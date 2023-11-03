@@ -11,7 +11,7 @@ from dgisim.agents import RandomAgent
 
 from ...components.wip import WIP
 from ...components.centre import make_centre
-from ...qcomp import QItem, QAnchor, QAlign
+from ...qcomp import QItem, QAnchor, QAlign, QImage
 from ...context import AppContext, GamePlaySettings, PlayerSettings
 from ...routes import Route
 from ..base import QPage
@@ -187,6 +187,8 @@ class GamePlayPage(QPage):
 
         return
 
+    dssm.AutumnWhirlwindSummon
+
     def _char_zone(
             self,
             top_pct: float,
@@ -199,7 +201,6 @@ class GamePlayPage(QPage):
             width_pct=1.0,
             height_pct=height_pct,
             anchor=QAnchor(left=0.0, top=top_pct),
-            border=ft.border.all(1, "black"),
         )
         chars = game_state.get_player(pid).get_characters()
         item.add_flet_comp(ft.Row(
@@ -224,7 +225,89 @@ class GamePlayPage(QPage):
             width_pct=1.0,
             height_pct=height_pct,
             anchor=QAnchor(left=0.0, top=top_pct),
-            border=ft.border.all(1, "black"),
+            children=(
+                self._support_zone(pid, game_state),
+                self._summon_zone(pid, game_state),
+            ),
+        )
+        return item
+
+    def _support_zone(
+            self,
+            pid: ds.Pid,
+            game_state: ds.GameState,
+    ) -> QItem:
+        item = QItem(
+            object_name=f"support-zone-{pid}",
+            width_pct=0.5,
+            height_pct=1.0,
+            anchor=QAnchor(left=0.0, top=0.0),
+            children=([
+                QItem(
+                    width_pct=0.22,
+                    height_pct=1.0,
+                    anchor=QAnchor(left=i * 0.25 + 0.02, top=0.0),
+                    colour="#A87845",
+                    children=(
+                        QImage(
+                            object_name="support-img",
+                            src=f"assets/supports/{support.__class__.__name__}.png",
+                            expand=True,
+                        ),
+                    ),
+                    flets=[
+                        ft.Text(f"{support.__class__.__name__}"),
+                    ]
+                )
+                for i, support in enumerate(game_state.get_player(pid).get_supports())
+            ]),
+        )
+        return item
+
+    def _summon_zone(
+            self,
+            pid: ds.Pid,
+            game_state: ds.GameState,
+    ) -> QItem:
+        item = QItem(
+            object_name=f"summon-zone-{pid}",
+            width_pct=0.5,
+            height_pct=1.0,
+            anchor=QAnchor(left=0.5, top=0.0),
+            children=([
+                QItem(
+                    width_pct=0.22,
+                    height_pct=1.0,
+                    anchor=QAnchor(left=i * 0.25 + 0.02, top=0.0),
+                    colour="#A87845",
+                    children=(
+                        QImage(
+                            object_name="summon-img",
+                            src=f"assets/summons/{summon.__class__.__name__}.png",
+                            expand=True,
+                        ),
+                        QItem(
+                            object_name="summon-count-down",
+                            height_pct=0.2,
+                            width_height_pct=1.0,
+                            align=QAlign(x_pct=0.95, y_pct=0.05),
+                            colour="#887054",
+                            border=ft.border.all(1, "black"),
+                            flets=(
+                                make_centre(ft.Text(
+                                    value=f"{summon.usages}",
+                                    color="#FFFFFF",
+                                    size=9,
+                                )),
+                            ),
+                        ),
+                    ),
+                    flets=(
+                        ft.Text(f"{summon.__class__.__name__}"),
+                    )
+                )
+                for i, summon in enumerate(game_state.get_player(pid).get_summons())
+            ]),
         )
         return item
 
