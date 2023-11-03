@@ -270,7 +270,6 @@ class GamePlayPage(QPage):
                         right=1.0,
                         top=active_top if is_active else inactive_top,
                     ),
-                    border=ft.border.all(1, "red"),
                     children=(
                         aura_bar := QItem(
                             object_name=f"char-{pid}-{char_id}-{char.name()}-aura-bar",
@@ -315,10 +314,11 @@ class GamePlayPage(QPage):
                 QItem(
                     height_pct=energy_height,
                     width_height_pct=1.0,
-                    align=QAlign(x_pct=1.0, y_pct=(2 * energy - 1) * energy_height),
+                    align=QAlign(x_pct=1.0, y_pct=(1.5 * energy - 0.5) * energy_height),
                     colour=ft.colors.with_opacity(
-                        1 if energy <= char.get_energy() else 0.2, "yellow"
+                        1, "#EEEE00" if energy <= char.get_energy() else "#A28E75"
                     ),
+                    border=ft.border.all(2, "#DBC9AF"),
                 )
             ))
         elem_colour_map = {
