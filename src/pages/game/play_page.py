@@ -625,6 +625,12 @@ class GamePlayPage(QPage):
                                     src=f"assets/dice/{elem_die_map[elem]}Die.png",
                                     expand=True,
                                 ),
+                                QImage(
+                                    src=f"assets/elem_icons/{elem_die_map[elem]}.png",
+                                    width_pct=0.7,
+                                    height_pct=0.7,
+                                    align=QAlign(x_pct=0.5, y_pct=0.5),
+                                ),
                             ),
                         ).root_component
                         for elem in die_list
