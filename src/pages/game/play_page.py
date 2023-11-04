@@ -4,9 +4,10 @@ from typing import Any
 
 import flet as ft
 import dgisim as ds
-from dgisim import support as dssp
-from dgisim import summon as dssm
 from dgisim import card as dscd
+from dgisim import status as dsst
+from dgisim import summon as dssm
+from dgisim import support as dssp
 from dgisim.agents import RandomAgent
 
 from ...components.wip import WIP
@@ -65,11 +66,25 @@ class GamePlayPage(QPage):
                         2
                     ).elemental_aura(
                         ds.ElementalAura.from_default().add(ds.Element.HYDRO),
+                    ).f_equipments(
+                        lambda es: es.update_status(
+                            dsst.GamblersEarringsStatus()
+                        ).update_status(
+                            dsst.AmosBowStatus()
+                        )
                     ).build()
                 ).f_character(
                     2,
                     lambda c: c.factory().elemental_aura(
                         ds.ElementalAura.from_default().add(ds.Element.ELECTRO),
+                    ).f_equipments(
+                        lambda es: es.update_status(
+                            dsst.AmosBowStatus()
+                        ).update_status(
+                            dsst.ColdBloodedStrikeStatus()
+                        ).update_status(
+                            dsst.GamblersEarringsStatus()
+                        )
                     ).build()
                 ).build()
             ).f_summons(
@@ -130,7 +145,15 @@ class GamePlayPage(QPage):
                     ).build()
                 ).f_character(
                     3,
-                    lambda c: c.factory().energy(1).build()
+                    lambda c: c.factory().energy(
+                        1
+                    ).f_equipments(
+                        lambda es: es.update_status(
+                            dsst.GamblersEarringsStatus()
+                        ).update_status(
+                            dsst.ColdBloodedStrikeStatus()
+                        )
+                    ).build()
                 ).build()
             ).f_summons(
                 lambda ss: ss.update_summon(
@@ -331,7 +354,7 @@ class GamePlayPage(QPage):
                     width_height_pct=1.0,
                     align=QAlign(x_pct=0.95, y_pct=0.05),
                     colour="#887054",
-                    border=ft.border.all(1, "black"),
+                    border=ft.border.all(1, "#DBC9AF"),
                     flets=(
                         make_centre(ft.Text(
                             value=f"{support.usages}",
@@ -363,7 +386,7 @@ class GamePlayPage(QPage):
                     width_height_pct=1.0,
                     align=QAlign(x_pct=0.95, y_pct=0.05),
                     colour="#887054",
-                    border=ft.border.all(1, "black"),
+                    border=ft.border.all(1, "#DBC9AF"),
                     flets=(
                         make_centre(ft.Text(
                             value=f"{summon.usages}",
@@ -416,7 +439,7 @@ class GamePlayPage(QPage):
                             height_pct=0.7,
                             width_height_pct=0.75,
                             align=QAlign(x_pct=0.5, y_pct=0.52),
-                            border=ft.border.all(1, "#000000"),
+                            border=ft.border.all(1, "#DBC9AF"),
                         ),
                     ),
                 ),
@@ -438,10 +461,41 @@ class GamePlayPage(QPage):
                 colour="#A87845",
                 border=ft.border.all(1, "#DBC9AF"),
             ),
+            equip_item := QItem(
+                object_name=f"char-{pid}-{char_id}-{char.name()}-equip",
+                height_pct=0.8,
+                width_pct=0.2,
+                anchor=QAnchor(left=-0.1, top=0.2),
+            ),
         ))
         hp_item.add_flet_comp((
             make_centre(ft.Text(f"{char.get_hp()}"))
         ))
+        equipments: ds.EquipmentStatuses = char.get_equipment_statuses()
+        eq_map = {
+            dsst.TalentEquipmentStatus: "Talent",
+            dsst.EquipmentStatus: "Weapon",
+            dsst.ArtifactEquipmentStatus: "Artifact",
+        }
+        eqs: list[str] = []
+        for eq_type, name in eq_map.items():
+            if equipments.find_type(eq_type):
+                eqs.append(name)
+        equip_item.add_children([
+            QItem(
+                width_pct=1.0,
+                height_width_pct=1.0,
+                anchor=QAnchor(left=0.0, top=i * 0.225),
+                children=(
+                    QImage(
+                        src=f"assets/icons/{eq_name}Icon.png",
+                        expand=True,
+                    ),
+                ),
+            )
+            for i, eq_name in enumerate(eqs)
+        ])
+
         energy_height = 0.13
         for energy in range(1, char.get_max_energy() + 1):
             char_card.add_children((
@@ -527,8 +581,8 @@ class GamePlayPage(QPage):
                         anchor=QAnchor(left=0.0, top=0.0),
                     ),
                     deck_corner := QItem(
-                        height_pct=1.0/22*9,
-                        width_height_pct=7/12,
+                        height_pct=1.0 / 22 * 9,
+                        width_height_pct=7 / 12,
                         anchor=QAnchor(left=0.0, bottom=1.0),
                         colour="#000000",
                         children=(
@@ -604,7 +658,7 @@ class GamePlayPage(QPage):
             card_info = QItem(
                 ref_parent=item,
                 height_pct=1.0,
-                width_height_pct=7/12,
+                width_height_pct=7 / 12,
                 colour="#000000",
                 children=(
                     QImage(
@@ -654,7 +708,7 @@ class GamePlayPage(QPage):
             item = QItem(
                 object_name=f"cards-{pid}",
                 width_pct=1.0,
-                height_pct=0.22/0.09,
+                height_pct=0.22 / 0.09,
                 anchor=QAnchor(left=0.0, bottom=1.0),
                 children=[
                     self._card(i, card, pid, game_state)
@@ -672,8 +726,8 @@ class GamePlayPage(QPage):
     ) -> QItem:
         item = QItem(
             height_pct=1.0,
-            width_height_pct=7/12,
-            anchor=QAnchor(left=idx*0.08, top=0.0),
+            width_height_pct=7 / 12,
+            anchor=QAnchor(left=idx * 0.08, top=0.0),
             children=(
                 QItem(
                     width_pct=0.9,
