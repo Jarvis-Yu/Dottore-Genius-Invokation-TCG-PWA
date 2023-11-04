@@ -1,5 +1,5 @@
 from __future__ import annotations
-import math
+from math import pi
 from typing import Any
 
 import flet as ft
@@ -455,11 +455,12 @@ class GamePlayPage(QPage):
         char_card.add_children((
             hp_item := QItem(
                 object_name=f"char-{pid}-{char_id}-{char.name()}-health",
-                height_pct=0.25,
+                height_pct=0.2,
                 width_height_pct=1.0,
                 align=QAlign(x_pct=0.0, y_pct=0.0),
                 colour="#A87845",
-                border=ft.border.all(1, "#DBC9AF"),
+                border=ft.border.all(2, "#DBC9AF"),
+                rotate=ft.Rotate(angle=0.25*pi, alignment=ft.alignment.center),
             ),
             equip_item := QItem(
                 object_name=f"char-{pid}-{char_id}-{char.name()}-equip",
@@ -468,9 +469,17 @@ class GamePlayPage(QPage):
                 anchor=QAnchor(left=-0.1, top=0.2),
             ),
         ))
-        hp_item.add_flet_comp((
-            make_centre(ft.Text(f"{char.get_hp()}"))
-        ))
+        hp_item.add_children(
+            QItem(
+                height_pct=1.0,
+                width_pct=2.0,
+                align=QAlign(x_pct=0.5, y_pct=0.5),
+                rotate=ft.Rotate(angle=-0.25*pi, alignment=ft.alignment.center),
+                flets=(
+                    make_centre(ft.Text(f"{char.get_hp()}")),
+                ),
+            ),
+        )
         equipments: ds.EquipmentStatuses = char.get_equipment_statuses()
         eq_map = {
             dsst.TalentEquipmentStatus: "Talent",
@@ -507,6 +516,7 @@ class GamePlayPage(QPage):
                         1, "#EEEE00" if energy <= char.get_energy() else "#A28E75"
                     ),
                     border=ft.border.all(2, "#DBC9AF"),
+                    rotate=ft.Rotate(angle=0.25*pi, alignment=ft.alignment.center),
                 )
             ))
         elem_colour_map = {

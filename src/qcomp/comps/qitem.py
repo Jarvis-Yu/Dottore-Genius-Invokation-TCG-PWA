@@ -95,6 +95,7 @@ class QItem:
         expand: bool = False,
         align: QAlign | ft.Alignment | None = None,
         anchor: QAnchor | None = None,
+        rotate: ft.Rotate | None = None,
         inset: QInset = QInset.all(0.0),
         clip: ft.ClipBehavior = ft.ClipBehavior.NONE,
         colour: str = ft.colors.with_opacity(0, "#FFFFFF"),
@@ -114,6 +115,7 @@ class QItem:
         self.expand = expand
         self.align = align if not isinstance(align, QAlign) else align.to_flet()
         self.anchor = anchor
+        self.rotate = rotate
         self.inset = inset if not isinstance(inset, QInset) else inset.to_flet()
         self.clip = clip
         self.colour = colour
@@ -178,6 +180,7 @@ class QItem:
             self._container = ft.Container(
                 content=self._frame,
                 bgcolor=self.colour,
+                rotate=self.rotate,
                 expand=True,
             )
             self.root_component = ft.TransparentPointer(
@@ -191,6 +194,7 @@ class QItem:
                 bgcolor=self.colour,
                 width=self.width,
                 height=self.height,
+                rotate=self.rotate,
             )
             self.root_component = ft.TransparentPointer(
                 content=ft.Container(
@@ -219,6 +223,7 @@ class QItem:
                 bgcolor=self.colour,
                 width=self.width,
                 height=self.height,
+                rotate=self.rotate,
             )
             self.root_component = ft.TransparentPointer(
                 content=self._container,
