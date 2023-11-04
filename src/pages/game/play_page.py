@@ -298,8 +298,8 @@ class GamePlayPage(QPage):
             height_pct=height_pct,
             anchor=QAnchor(left=0.0, top=top_pct),
             children=(
-                self._dice(pid, game_state),
                 self._cards(pid, game_state),
+                self._dice(pid, game_state),
             ),
         )
         return item
@@ -324,7 +324,6 @@ class GamePlayPage(QPage):
             ]
         )
         if hasattr(support, "usages"):
-            # print(support)
             item.add_children((
                 QItem(
                     object_name="support-count-down",
@@ -515,23 +514,47 @@ class GamePlayPage(QPage):
             ds.Element.OMNI: "Omni",
             ds.Element.ANY: "Any",
         }
+        dice = game_state.get_player(pid).get_dice()
         if pid is self._home_pid:
             die_list: list[ds.Element] = []
-            for elem, num in game_state.get_player(pid).get_dice().readonly_dice_ordered(
-                    game_state.get_player(pid)
-            ).items():
+            for elem, num in dice.readonly_dice_ordered(game_state.get_player(pid)).items():
                 die_list.extend([elem] * num)
-            print(pid, die_list)
             item = QItem(
-                height_pct=0.12,
-                width_pct=1.0,
-                anchor=QAnchor(left=0.0, top=0.0),
+                expand=True,
+                children=(
+                    dice_row_item := QItem(
+                        height_pct=0.12,
+                        width_pct=1.0,
+                        anchor=QAnchor(left=0.0, top=0.0),
+                    ),
+                    deck_corner := QItem(
+                        height_pct=1.0/22*9,
+                        width_height_pct=7/12,
+                        anchor=QAnchor(left=0.0, bottom=1.0),
+                        colour="#000000",
+                        children=(
+                            QImage(
+                                src=f"assets/cards/OmniCardCard.png",
+                                expand=True,
+                            ),
+                            QItem(
+                                expand=True,
+                                colour=ft.colors.with_opacity(0.2, "#000000"),
+                                flets=(
+                                    make_centre(ft.Text(
+                                        f"{game_state.get_player(pid).get_deck_cards().num_cards()}"
+                                    )),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
             )
-            item.add_flet_comp((
+            dice_row_item.add_flet_comp((
                 ft.Row(
                     controls=[
                         QItem(
-                            ref_parent=item,
+                            ref_parent=dice_row_item,
                             height_pct=1.0,
                             width_height_pct=1.0,
                             children=(
@@ -549,9 +572,61 @@ class GamePlayPage(QPage):
             ))
         else:
             item = QItem(
-                width=1,
-                height=1,
+                expand=True,
+                children=(
+                    QItem(
+                        anchor=QAnchor(left=0.0, right=1.0, top=-0.1, bottom=0.9),
+                        flets=(
+                            info_row := ft.Row(
+                                controls=[],
+                                alignment=ft.MainAxisAlignment.START,
+                            ),
+                        ),
+                    ),
+                ),
             )
+            dice_info = QItem(
+                ref_parent=item,
+                height_pct=0.5,
+                width_height_pct=1.0,
+                children=(
+                    QImage(
+                        src=f"assets/dice/{elem_die_map[ds.Element.ANY]}Die.png",
+                        expand=True,
+                    ),
+                    QItem(
+                        expand=True,
+                        flets=(
+                            make_centre(ft.Text(f"{dice.num_dice()}")),
+                        ),
+                    ),
+                )
+            )
+            card_info = QItem(
+                ref_parent=item,
+                height_pct=1.0,
+                width_height_pct=7/12,
+                colour="#000000",
+                children=(
+                    QImage(
+                        src=f"assets/cards/OmniCardCard.png",
+                        expand=True,
+                    ),
+                    QItem(
+                        expand=True,
+                        colour=ft.colors.with_opacity(0.2, "#000000"),
+                        flets=(
+                            make_centre(ft.Text(
+                                f"{game_state.get_player(pid).get_deck_cards().num_cards()}"
+                            )),
+                        ),
+                    ),
+                ),
+            )
+            info_row.controls.extend((
+                card_info.root_component,
+                dice_info.root_component,
+            ))
         return item
 
     def _cards(
