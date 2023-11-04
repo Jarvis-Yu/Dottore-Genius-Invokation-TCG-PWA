@@ -395,7 +395,6 @@ class GamePlayPage(QPage):
             ref_parent=ref_parent,
             height_pct=1.0,
             width_height_pct=0.65,
-            # border=ft.border.all(1, "black"),
             children=(
                 char_item := QItem(
                     object_name=f"char-{pid}-{char_id}-{char.name()}-body",
@@ -417,7 +416,7 @@ class GamePlayPage(QPage):
                             height_pct=0.7,
                             width_height_pct=0.75,
                             align=QAlign(x_pct=0.5, y_pct=0.52),
-                            border=ft.border.all(1, "blue"),
+                            border=ft.border.all(1, "#000000"),
                         ),
                     ),
                 ),
@@ -437,7 +436,7 @@ class GamePlayPage(QPage):
                 width_height_pct=1.0,
                 align=QAlign(x_pct=0.0, y_pct=0.0),
                 colour="#A87845",
-                border=ft.border.all(1, "green"),
+                border=ft.border.all(1, "#DBC9AF"),
             ),
         ))
         hp_item.add_flet_comp((
