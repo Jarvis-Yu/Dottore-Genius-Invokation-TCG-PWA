@@ -93,7 +93,7 @@ class GamePlayPage(QPage):
                     dssp.PaimonSupport(sid=4)
                 )
             ).f_dice(
-                lambda _: ds.ActualDice.from_random(8, excepted_elems=set((
+                lambda _: ds.ActualDice.from_random(16, excepted_elems=set((
                     ds.Element.PYRO,
                     ds.Element.HYDRO,
                     ds.Element.ELECTRO,
@@ -103,6 +103,9 @@ class GamePlayPage(QPage):
                     dscd.ProphecyOfSubmersion: 1,
                     dscd.IHaventLostYet: 2,
                     dscd.Starsigns: 1,
+                    dscd.ElementalResonanceWovenThunder: 2,
+                    dscd.LiyueHarborWharf: 2,
+                    dscd.LeaveItToMe: 2,
                 })
             ).build()
         ).f_player2(
@@ -162,7 +165,7 @@ class GamePlayPage(QPage):
                     dscd.TheShrinesSacredShade: 1,
                 })
             ).build()
-        ).build()
+        ).build().prespective_view(self._home_pid)
         self.rerender()
 
     def _back_to_home(self, _: Any) -> None:
@@ -249,15 +252,8 @@ class GamePlayPage(QPage):
                     anchor=QAnchor(left=i * 0.25 + 0.02, top=0.0),
                     colour="#A87845",
                     children=(
-                        QImage(
-                            object_name="support-img",
-                            src=f"assets/supports/{support.__class__.__name__}.png",
-                            expand=True,
-                        ),
+                        self._support(support, pid, game_state),
                     ),
-                    flets=[
-                        ft.Text(f"{support.__class__.__name__}"),
-                    ]
                 )
                 for i, support in enumerate(game_state.get_player(pid).get_supports())
             ]),
@@ -281,30 +277,8 @@ class GamePlayPage(QPage):
                     anchor=QAnchor(left=i * 0.25 + 0.02, top=0.0),
                     colour="#A87845",
                     children=(
-                        QImage(
-                            object_name="summon-img",
-                            src=f"assets/summons/{summon.__class__.__name__}.png",
-                            expand=True,
-                        ),
-                        QItem(
-                            object_name="summon-count-down",
-                            height_pct=0.2,
-                            width_height_pct=1.0,
-                            align=QAlign(x_pct=0.95, y_pct=0.05),
-                            colour="#887054",
-                            border=ft.border.all(1, "black"),
-                            flets=(
-                                make_centre(ft.Text(
-                                    value=f"{summon.usages}",
-                                    color="#FFFFFF",
-                                    size=9,
-                                )),
-                            ),
-                        ),
+                        self._summon(summon, pid, game_state),
                     ),
-                    flets=(
-                        ft.Text(f"{summon.__class__.__name__}"),
-                    )
                 )
                 for i, summon in enumerate(game_state.get_player(pid).get_summons())
             ]),
@@ -323,7 +297,86 @@ class GamePlayPage(QPage):
             width_pct=1.0,
             height_pct=height_pct,
             anchor=QAnchor(left=0.0, top=top_pct),
-            border=ft.border.all(1, "black"),
+            children=(
+                self._dice(pid, game_state),
+                self._cards(pid, game_state),
+            ),
+        )
+        return item
+
+    def _support(
+            self,
+            support: ds.Support,
+            pid: ds.Pid,
+            game_state: ds.GameState,
+    ) -> QItem:
+        item = QItem(
+            expand=True,
+            children=(
+                QImage(
+                    object_name="support-img",
+                    src=f"assets/supports/{support.__class__.__name__}.png",
+                    expand=True,
+                ),
+            ),
+            flets=[
+                ft.Text(f"{support.__class__.__name__}"),
+            ]
+        )
+        if hasattr(support, "usages"):
+            # print(support)
+            item.add_children((
+                QItem(
+                    object_name="support-count-down",
+                    height_pct=0.2,
+                    width_height_pct=1.0,
+                    align=QAlign(x_pct=0.95, y_pct=0.05),
+                    colour="#887054",
+                    border=ft.border.all(1, "black"),
+                    flets=(
+                        make_centre(ft.Text(
+                            value=f"{support.usages}",
+                            color="#FFFFFF",
+                            size=9,
+                        )),
+                    ),
+                ),
+            ))
+        return item
+
+    def _summon(
+            self,
+            summon: ds.Summon,
+            pid: ds.Pid,
+            game_state: ds.GameState,
+    ) -> QItem:
+        item = QItem(
+            expand=True,
+            children=(
+                QImage(
+                    object_name="summon-img",
+                    src=f"assets/summons/{summon.__class__.__name__}.png",
+                    expand=True,
+                ),
+                QItem(
+                    object_name="summon-count-down",
+                    height_pct=0.2,
+                    width_height_pct=1.0,
+                    align=QAlign(x_pct=0.95, y_pct=0.05),
+                    colour="#887054",
+                    border=ft.border.all(1, "black"),
+                    flets=(
+                        make_centre(ft.Text(
+                            value=f"{summon.usages}",
+                            color="#FFFFFF",
+                            size=9,
+                        )),
+                    ),
+                ),
+            ),
+            flets=(
+                ft.Text(f"{summon.__class__.__name__}"),
+            ),
         )
         return item
 
@@ -443,5 +496,125 @@ class GamePlayPage(QPage):
                 expand=True,
                 alignment=ft.MainAxisAlignment.SPACE_EVENLY,
             )
+        )
+        return item
+
+    def _dice(
+            self,
+            pid: ds.Pid,
+            game_state: ds.GameState,
+    ) -> QItem:
+        elem_die_map = {
+            ds.Element.PYRO: "Pyro",
+            ds.Element.HYDRO: "Hydro",
+            ds.Element.ANEMO: "Anemo",
+            ds.Element.ELECTRO: "Electro",
+            ds.Element.DENDRO: "Dendro",
+            ds.Element.CRYO: "Cryo",
+            ds.Element.GEO: "Geo",
+            ds.Element.OMNI: "Omni",
+            ds.Element.ANY: "Any",
+        }
+        if pid is self._home_pid:
+            die_list: list[ds.Element] = []
+            for elem, num in game_state.get_player(pid).get_dice().readonly_dice_ordered(
+                    game_state.get_player(pid)
+            ).items():
+                die_list.extend([elem] * num)
+            print(pid, die_list)
+            item = QItem(
+                height_pct=0.12,
+                width_pct=1.0,
+                anchor=QAnchor(left=0.0, top=0.0),
+            )
+            item.add_flet_comp((
+                ft.Row(
+                    controls=[
+                        QItem(
+                            ref_parent=item,
+                            height_pct=1.0,
+                            width_height_pct=1.0,
+                            children=(
+                                QImage(
+                                    src=f"assets/dice/{elem_die_map[elem]}Die.png",
+                                    expand=True,
+                                ),
+                            ),
+                        ).root_component
+                        for elem in die_list
+                    ],
+                    spacing=1,
+                    expand=True,
+                ),
+            ))
+        else:
+            item = QItem(
+                width=1,
+                height=1,
+            )
+        return item
+
+    def _cards(
+            self,
+            pid: ds.Pid,
+            game_state: ds.GameState,
+    ) -> QItem:
+        cards = game_state.get_player(pid).get_hand_cards()
+        card_list: list[type[ds.Card]] = []
+        for card in cards:
+            for _ in range(cards[card]):
+                card_list.append(card)
+
+        if pid is self._home_pid:
+            item = QItem(
+                object_name=f"cards-{pid}",
+                width_pct=1.0,
+                height_pct=1.0,
+                anchor=QAnchor(left=0.0, top=0.3),
+                children=[
+                    self._card(i, card, pid, game_state)
+                    for i, card in enumerate(card_list)
+                ],
+            )
+        else:
+            item = QItem(
+                object_name=f"cards-{pid}",
+                width_pct=1.0,
+                height_pct=0.22/0.09,
+                anchor=QAnchor(left=0.0, bottom=1.0),
+                children=[
+                    self._card(i, card, pid, game_state)
+                    for i, card in enumerate(card_list)
+                ],
+            )
+        return item
+
+    def _card(
+            self,
+            idx: int,
+            card: ds.Card,
+            pid: ds.Pid,
+            game_state: ds.GameState,
+    ) -> QItem:
+        item = QItem(
+            height_pct=1.0,
+            width_height_pct=7/12,
+            anchor=QAnchor(left=idx*0.08, top=0.0),
+            children=(
+                QItem(
+                    width_pct=0.9,
+                    height_pct=0.9,
+                    align=QAlign(x_pct=0.5, y_pct=0.5),
+                    colour="#A87845",
+                    border=ft.border.all(1, "black"),
+                    flets=(
+                        make_centre(ft.Text(card.name())),
+                    )
+                ),
+                QImage(
+                    src=f"assets/cards/{card.name()}Card.png",
+                    expand=True,
+                ),
+            ),
         )
         return item

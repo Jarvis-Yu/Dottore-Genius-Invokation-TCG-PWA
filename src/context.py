@@ -42,10 +42,12 @@ class Settings:
             color={
                 ft.MaterialState.HOVERED: self.contrast_text_colour,
                 ft.MaterialState.DEFAULT: self.normal_text_colour,
+                ft.MaterialState.DISABLED: self.theme_colour,
             },
             bgcolor={
                 ft.MaterialState.HOVERED: self.theme_colour_light,
-                ft.MaterialState.DEFAULT: self.theme_colour
+                ft.MaterialState.DEFAULT: self.theme_colour,
+                ft.MaterialState.DISABLED: self.theme_colour_dark,
             },
         )
 

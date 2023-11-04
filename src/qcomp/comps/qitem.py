@@ -316,6 +316,11 @@ class QItem:
         if self.inited:
             for child in children:
                 child._init_by_parent(self)
+        else:
+            if isinstance(children, Sequence):
+                self.children.extend(children)
+            else:
+                self.children.append(children)
 
     def add_flet_comp(self, comp: Sequence[Self] | ft.Control) -> None:
         if isinstance(comp, ft.Control):
