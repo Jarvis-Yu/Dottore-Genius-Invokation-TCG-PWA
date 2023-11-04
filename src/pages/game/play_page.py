@@ -86,6 +86,9 @@ class GamePlayPage(QPage):
                             dsst.GamblersEarringsStatus()
                         )
                     ).build()
+                ).f_character(
+                    3,
+                    lambda c: c.factory().hp(0).alive(False).build()
                 ).build()
             ).f_summons(
                 lambda ss: ss.update_summon(
@@ -131,6 +134,8 @@ class GamePlayPage(QPage):
                     1,
                     lambda c: c.factory().elemental_aura(
                         ds.ElementalAura.from_default().add(ds.Element.PYRO),
+                    ).hp(
+                        0
                     ).build()
                 ).f_character(
                     2,
@@ -452,6 +457,21 @@ class GamePlayPage(QPage):
                 fit=ft.ImageFit.FILL,
             ),
         ))
+        if char.defeated():
+            char_card.add_children((
+                QItem(
+                    expand=True,
+                    colour=ft.colors.with_opacity(0.7, "#000000"),
+                ),
+            ))
+            return item
+        if char.get_hp() == 0:
+            char_card.add_children((
+                QItem(
+                    expand=True,
+                    colour=ft.colors.with_opacity(0.5, "#000000"),
+                ),
+            ))
         char_card.add_children((
             hp_item := QItem(
                 object_name=f"char-{pid}-{char_id}-{char.name()}-health",
