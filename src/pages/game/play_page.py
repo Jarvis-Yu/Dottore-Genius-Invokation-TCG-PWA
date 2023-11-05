@@ -85,6 +85,14 @@ class GamePlayPage(QPage):
                         ).update_status(
                             dsst.GamblersEarringsStatus()
                         )
+                    ).f_character_statuses(
+                        lambda ss: ss.update_status(
+                            dsst.MushroomPizzaStatus()
+                        ).update_status(
+                            dsst.SatiatedStatus()
+                        ).update_status(
+                            dsst.LotusFlowerCrispStatus()
+                        )
                     ).build()
                 ).f_character(
                     3,
@@ -192,6 +200,12 @@ class GamePlayPage(QPage):
                     dscd.SumeruCity: 2,
                     dscd.TheShrinesSacredShade: 1,
                 })
+            ).f_combat_statuses(
+                lambda ss: ss.update_status(
+                    dsst.RainbowBladeworkStatus()
+                ).update_status(
+                    dsst.RainSwordStatus()
+                )
             ).build()
         ).build().prespective_view(self._home_pid)
         self.rerender()
@@ -487,8 +501,8 @@ class GamePlayPage(QPage):
             equip_item := QItem(
                 object_name=f"char-{pid}-{char_id}-{char.name()}-equip",
                 height_pct=0.8,
-                width_pct=0.2,
-                anchor=QAnchor(left=-0.1, top=0.2),
+                width_pct=0.22,
+                anchor=QAnchor(left=-0.11, top=0.2),
             ),
         ))
         hp_item.add_children(
@@ -517,6 +531,8 @@ class GamePlayPage(QPage):
                 width_pct=1.0,
                 height_width_pct=1.0,
                 anchor=QAnchor(left=0.0, top=i * 0.225),
+                border_radius=0x7fffffff,
+                border=ft.border.all(1, "#DBC9AF"),
                 children=(
                     QImage(
                         src=f"assets/icons/{eq_name}Icon.png",
@@ -581,6 +597,43 @@ class GamePlayPage(QPage):
                 alignment=ft.MainAxisAlignment.SPACE_EVENLY,
             )
         )
+        char_card.add_children((
+            char_status_row_item := QItem(
+                width_pct=1.0,
+                height_pct=0.15,
+                anchor=QAnchor(left=0.0, bottom=0.99),
+            ),
+        ))
+        for i, status in enumerate(char.get_character_statuses()):
+            if i > 3:
+                break
+            char_status_row_item.add_children((
+                QImage(
+                    height_pct=1.0,
+                    width_height_pct=1.0,
+                    anchor=QAnchor(left=i * 0.25, top=0.0),
+                    src=f"assets/icons/StatusIcon.png",
+                ),
+            ))
+        if is_active:
+            char_card.add_children((
+                combat_status_row_item := QItem(
+                    width_pct=1.0,
+                    height_pct=0.15,
+                    anchor=QAnchor(left=0.0, top=1.01),
+                ),
+            ))
+            for i, status in enumerate(game_state.get_player(pid).get_combat_statuses()):
+                if i > 3:
+                    break
+                combat_status_row_item.add_children((
+                    QImage(
+                        height_pct=1.0,
+                        width_height_pct=1.0,
+                        anchor=QAnchor(left=i * 0.25, top=0.0),
+                        src=f"assets/icons/StatusIcon.png",
+                    ),
+                ))
         return item
 
     def _dice(

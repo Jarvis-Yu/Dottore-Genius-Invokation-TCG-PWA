@@ -100,6 +100,7 @@ class QItem:
         clip: ft.ClipBehavior = ft.ClipBehavior.NONE,
         colour: str = ft.colors.with_opacity(0, "#FFFFFF"),
         border: ft.Border | None = None,
+        border_radius: float | int | None = None,
         children: Sequence[Self] | Self = (),
         flets: Sequence[ft.Control] | ft.Control = (),
     ):
@@ -120,6 +121,7 @@ class QItem:
         self.clip = clip
         self.colour = colour
         self.border = border
+        self.border_radius = border_radius
         self.children: list[Self] = list(children) if isinstance(children, Sequence) else [children]
         self.inited = False  # True after _init_by_parent is called
 
@@ -180,7 +182,6 @@ class QItem:
             self._container = ft.Container(
                 content=self._frame,
                 bgcolor=self.colour,
-                rotate=self.rotate,
                 expand=True,
             )
             self.root_component = ft.TransparentPointer(
@@ -194,7 +195,6 @@ class QItem:
                 bgcolor=self.colour,
                 width=self.width,
                 height=self.height,
-                rotate=self.rotate,
             )
             self.root_component = ft.TransparentPointer(
                 content=ft.Container(
@@ -223,7 +223,6 @@ class QItem:
                 bgcolor=self.colour,
                 width=self.width,
                 height=self.height,
-                rotate=self.rotate,
             )
             self.root_component = ft.TransparentPointer(
                 content=self._container,
@@ -231,6 +230,8 @@ class QItem:
                 height=self.height,
             )
         self._container.border = self.border
+        self._container.rotate = self.rotate
+        self._container.border_radius = self.border_radius
 
     def _update_internal_container_on_size(self) -> None:
         """ Update the internal container on size change """
