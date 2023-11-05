@@ -344,6 +344,7 @@ class GamePlayPage(QPage):
                 QImage(
                     object_name="support-img",
                     src=f"assets/supports/{support.__class__.__name__}.png",
+                    border=ft.border.all(1, "#DBC9AF"),
                     expand=True,
                 ),
             ),
@@ -383,6 +384,7 @@ class GamePlayPage(QPage):
                 QImage(
                     object_name="summon-img",
                     src=f"assets/summons/{summon.__class__.__name__}.png",
+                    border=ft.border.all(1, "#DBC9AF"),
                     expand=True,
                 ),
                 QItem(
