@@ -28,12 +28,12 @@ class GamePlayPage(QPage):
                 object_name="game-layer",
                 expand=True,
             ),
-            info_layer := QItem(
-                object_name="info-layer",
-                expand=True,
-            ),
             menu_layer := QItem(
                 object_name="menu-layer",
+                expand=True,
+            ),
+            info_layer := QItem(
+                object_name="info-layer",
                 expand=True,
             ),
         ))
@@ -237,8 +237,6 @@ class GamePlayPage(QPage):
 
         return
 
-    dssm.AutumnWhirlwindSummon
-
     def _char_zone(
             self,
             top_pct: float,
@@ -368,7 +366,7 @@ class GamePlayPage(QPage):
                 ),
             ),
             flets=[
-                ft.Text(f"{support.__class__.__name__}"),
+                ft.Text(value=f"{support.__class__.__name__}", color="#000000"),
             ]
         )
         if hasattr(support, "usages"):
@@ -423,7 +421,7 @@ class GamePlayPage(QPage):
                 ),
             ),
             flets=(
-                ft.Text(f"{summon.__class__.__name__}"),
+                ft.Text(value=f"{summon.__class__.__name__}", color="#000000"),
             ),
         )
         return item
@@ -472,7 +470,7 @@ class GamePlayPage(QPage):
             ),
         )
         char_card.add_flet_comp((
-            make_centre(ft.Text(char.name())),
+            make_centre(ft.Text(value=char.name(), color="#000000")),
             ft.Image(
                 src=f"assets/char_cards/{char.name()}75.png",
                 fit=ft.ImageFit.FILL,
@@ -541,6 +539,7 @@ class GamePlayPage(QPage):
             self._info_layer.add_flet_comp((
                 ft.Text(
                     value=content + optional_content,
+                    color="#FFFFFF",
                 ),
             ))
             self._context.page.update()
@@ -574,7 +573,7 @@ class GamePlayPage(QPage):
                 align=QAlign(x_pct=0.5, y_pct=0.5),
                 rotate=ft.Rotate(angle=-0.25*pi, alignment=ft.alignment.center),
                 flets=(
-                    make_centre(ft.Text(f"{char.get_hp()}")),
+                    make_centre(ft.Text(value=f"{char.get_hp()}", color="#FFFFFF")),
                 ),
             ),
         )
@@ -754,7 +753,8 @@ class GamePlayPage(QPage):
                         colour=ft.colors.with_opacity(0.2, "#000000"),
                         flets=(
                             make_centre(ft.Text(
-                                f"{game_state.get_player(pid).get_deck_cards().num_cards()}"
+                                value=f"{game_state.get_player(pid).get_deck_cards().num_cards()}",
+                                color="#FFFFFF",
                             )),
                         ),
                     ),
@@ -772,7 +772,7 @@ class GamePlayPage(QPage):
                     QItem(
                         expand=True,
                         flets=(
-                            make_centre(ft.Text(f"{dice.num_dice()}")),
+                            make_centre(ft.Text(value=f"{dice.num_dice()}", color="#FFFFFF")),
                         ),
                     ),
                 )
@@ -831,7 +831,7 @@ class GamePlayPage(QPage):
                     QItem(
                         expand=True,
                         flets=(
-                            make_centre(ft.Text(f"{dice.num_dice()}")),
+                            make_centre(ft.Text(value=f"{dice.num_dice()}", color="#FFFFFF")),
                         ),
                     ),
                 ),
@@ -851,7 +851,8 @@ class GamePlayPage(QPage):
                         colour=ft.colors.with_opacity(0.2, "#000000"),
                         flets=(
                             make_centre(ft.Text(
-                                f"{game_state.get_player(pid).get_deck_cards().num_cards()}"
+                                value=f"{game_state.get_player(pid).get_deck_cards().num_cards()}",
+                                color="#FFFFFF",
                             )),
                         ),
                     ),
@@ -917,7 +918,7 @@ class GamePlayPage(QPage):
                     colour="#A87845",
                     border=ft.border.all(1, "black"),
                     flets=(
-                        make_centre(ft.Text(card.name())),
+                        make_centre(ft.Text(value=card.name(), color="#FFFFFF")),
                     )
                 ),
                 QImage(
