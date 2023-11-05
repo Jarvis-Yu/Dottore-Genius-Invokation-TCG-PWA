@@ -28,12 +28,17 @@ class GamePlayPage(QPage):
                 object_name="game-layer",
                 expand=True,
             ),
+            info_layer := QItem(
+                object_name="info-layer",
+                expand=True,
+            ),
             menu_layer := QItem(
                 object_name="menu-layer",
                 expand=True,
             ),
         ))
         self._game_layer = game_layer
+        self._info_layer = info_layer
         self._menu_layer = menu_layer
         self._menu_layer.add_flet_comp(ft.Row(
             controls=[
@@ -488,6 +493,63 @@ class GamePlayPage(QPage):
                     colour=ft.colors.with_opacity(0.5, "#000000"),
                 ),
             ))
+
+        def show_char_detail(_: ft.ControlEvent) -> None:
+            def exit(_: ft.ControlEvent) -> None:
+                self._info_layer.clear()
+                self._context.page.update()
+
+            self._info_layer.add_flet_comp((
+                ft.Container(
+                    content=ft.GestureDetector(
+                        on_tap=exit,
+                    ),
+                    expand=True,
+                    bgcolor=ft.colors.with_opacity(0.7, "#000000"),
+                ),
+            ))
+            hidden_statuses = char.get_hidden_statuses()
+            equipment_statues = char.get_equipment_statuses()
+            character_statuses = char.get_character_statuses()
+            content = '\n'.join((
+                "<Implicit Statuses>",
+                '\n'.join([
+                    "    - " + s
+                    for s in hidden_statuses.dict_str()
+                ]),
+                "\n<Equipment Statuses>",
+                '\n'.join([
+                    "    - " + s
+                    for s in equipment_statues.dict_str()
+                ]),
+                "\n<Character Statuses>",
+                '\n'.join([
+                    "    - " + s
+                    for s in character_statuses.dict_str()
+                ]),
+            ))
+            optional_content = ""
+            if is_active:
+                combat_status = game_state.get_player(pid).get_combat_statuses()
+                optional_content = '\n'.join((
+                    "\n\n<Combat Statuses>",
+                    '\n'.join([
+                        "    - " + s
+                        for s in combat_status.dict_str()
+                    ]),
+                ))
+            self._info_layer.add_flet_comp((
+                ft.Text(
+                    value=content + optional_content,
+                ),
+            ))
+            self._context.page.update()
+
+        char_card.add_flet_comp((
+            ft.GestureDetector(
+                on_tap=show_char_detail,
+            ),
+        ))
         char_card.add_children((
             hp_item := QItem(
                 object_name=f"char-{pid}-{char_id}-{char.name()}-health",
