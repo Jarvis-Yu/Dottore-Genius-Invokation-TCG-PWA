@@ -610,29 +610,57 @@ class GamePlayPage(QPage):
                         width_pct=1.0,
                         anchor=QAnchor(left=0.0, top=0.0),
                     ),
-                    deck_corner := QItem(
+                    info_row_item := QItem(
                         height_pct=1.0 / 22 * 9,
-                        width_height_pct=7 / 12,
+                        width_pct=1.0,
                         anchor=QAnchor(left=0.0, bottom=1.0),
-                        colour="#000000",
-                        children=(
-                            QImage(
-                                src=f"assets/cards/OmniCardCard.png",
+                        flets=(
+                            info_row := ft.Row(
                                 expand=True,
-                            ),
-                            QItem(
-                                expand=True,
-                                colour=ft.colors.with_opacity(0.2, "#000000"),
-                                flets=(
-                                    make_centre(ft.Text(
-                                        f"{game_state.get_player(pid).get_deck_cards().num_cards()}"
-                                    )),
-                                ),
                             ),
                         ),
                     ),
                 ),
             )
+            card_info = QItem(
+                ref_parent=item,
+                height_pct=1.0 / 22 * 9,
+                width_height_pct=7 / 12,
+                colour="#000000",
+                children=(
+                    QImage(
+                        src=f"assets/cards/OmniCardCard.png",
+                        expand=True,
+                    ),
+                    QItem(
+                        expand=True,
+                        colour=ft.colors.with_opacity(0.2, "#000000"),
+                        flets=(
+                            make_centre(ft.Text(
+                                f"{game_state.get_player(pid).get_deck_cards().num_cards()}"
+                            )),
+                        ),
+                    ),
+                ),
+            )
+            dice_info = QItem(
+                ref_parent=item,
+                height_pct=0.5 / 22 * 9,
+                width_height_pct=1.0,
+                children=(
+                    QImage(
+                        src=f"assets/dice/{elem_die_map[ds.Element.ANY]}Die.png",
+                        expand=True,
+                    ),
+                    QItem(
+                        expand=True,
+                        flets=(
+                            make_centre(ft.Text(f"{dice.num_dice()}")),
+                        ),
+                    ),
+                )
+            )
+            info_row.controls.extend((card_info.root_component, dice_info.root_component))
             dice_row_item.add_flet_comp((
                 ft.Row(
                     controls=[
@@ -689,7 +717,7 @@ class GamePlayPage(QPage):
                             make_centre(ft.Text(f"{dice.num_dice()}")),
                         ),
                     ),
-                )
+                ),
             )
             card_info = QItem(
                 ref_parent=item,
