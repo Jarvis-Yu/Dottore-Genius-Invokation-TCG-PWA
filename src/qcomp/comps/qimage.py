@@ -12,7 +12,7 @@ class QImage(QItem):
             fit: ft.ImageFit = ft.ImageFit.COVER,
             **kwargs,
         ):
-        super().__init__(**kwargs)
+        super().__init__(border_radius=border_radius, **kwargs)
         self._image = ft.Image(src=src, border_radius=border_radius, fit=fit)
         self._image.width = self.width
         self._image.height = self.height

@@ -12,7 +12,7 @@ from dgisim.agents import RandomAgent
 
 from ...components.wip import WIP
 from ...components.centre import make_centre
-from ...qcomp import QItem, QAnchor, QAlign, QImage
+from ...qcomp import QItem, QAnchor, QAlign, QImage, QText
 from ...context import AppContext, GamePlaySettings, PlayerSettings
 from ...routes import Route
 from ..base import QPage
@@ -358,6 +358,12 @@ class GamePlayPage(QPage):
         item = QItem(
             expand=True,
             children=(
+                QText(
+                    expand=True,
+                    text=f"{support.__class__.__name__}",
+                    text_colour="#000000",
+                    size_rel_height=0.1,
+                ),
                 QImage(
                     object_name="support-img",
                     src=f"assets/supports/{support.__class__.__name__}.png",
@@ -365,9 +371,6 @@ class GamePlayPage(QPage):
                     expand=True,
                 ),
             ),
-            flets=[
-                ft.Text(value=f"{support.__class__.__name__}", color="#000000"),
-            ]
         )
         if hasattr(support, "usages"):
             item.add_children((
@@ -378,12 +381,15 @@ class GamePlayPage(QPage):
                     align=QAlign(x_pct=0.95, y_pct=0.05),
                     colour="#887054",
                     border=ft.border.all(1, "#DBC9AF"),
-                    flets=(
-                        make_centre(ft.Text(
-                            value=f"{support.usages}",
-                            color="#FFFFFF",
-                            size=9,
-                        )),
+                    children=(
+                        QText(
+                            height_pct=1.0,
+                            width_pct=2.0,
+                            align=QAlign(x_pct=0.5, y_pct=0.5),
+                            text=f"{support.usages}",
+                            text_colour="#FFFFFF",
+                            size_rel_height=0.6,
+                        ),
                     ),
                 ),
             ))
@@ -398,6 +404,12 @@ class GamePlayPage(QPage):
         item = QItem(
             expand=True,
             children=(
+                QText(
+                    expand=True,
+                    text=f"{summon.__class__.__name__}",
+                    text_colour="#000000",
+                    size_rel_height=0.1,
+                ),
                 QImage(
                     object_name="summon-img",
                     src=f"assets/summons/{summon.__class__.__name__}.png",
@@ -411,17 +423,17 @@ class GamePlayPage(QPage):
                     align=QAlign(x_pct=0.95, y_pct=0.05),
                     colour="#887054",
                     border=ft.border.all(1, "#DBC9AF"),
-                    flets=(
-                        make_centre(ft.Text(
-                            value=f"{summon.usages}",
-                            color="#FFFFFF",
-                            size=9,
-                        )),
+                    children=(
+                        QText(
+                            height_pct=1.0,
+                            width_pct=2.0,
+                            align=QAlign(x_pct=0.5, y_pct=0.5),
+                            text=f"{summon.usages}",
+                            text_colour="#FFFFFF",
+                            size_rel_height=0.6,
+                        ),
                     ),
                 ),
-            ),
-            flets=(
-                ft.Text(value=f"{summon.__class__.__name__}", color="#000000"),
             ),
         )
         return item
@@ -463,19 +475,25 @@ class GamePlayPage(QPage):
                             height_pct=0.7,
                             width_height_pct=0.75,
                             align=QAlign(x_pct=0.5, y_pct=0.52),
+                            colour="#A87845",
                             border=ft.border.all(1, "#DBC9AF"),
+                            children=(
+                                QText(
+                                    expand=True,
+                                    text=f"{char.name()}",
+                                    text_colour="#000000",
+                                    size_rel_height=0.15,
+                                ),
+                                QImage(
+                                    expand=True,
+                                    src=f"assets/char_cards/{char.name()}75.png",
+                                ),
+                            ),
                         ),
                     ),
                 ),
             ),
         )
-        char_card.add_flet_comp((
-            make_centre(ft.Text(value=char.name(), color="#000000")),
-            ft.Image(
-                src=f"assets/char_cards/{char.name()}75.png",
-                fit=ft.ImageFit.FILL,
-            ),
-        ))
         if char.defeated():
             char_card.add_children((
                 QItem(
@@ -536,10 +554,13 @@ class GamePlayPage(QPage):
                         for s in combat_status.dict_str()
                     ]),
                 ))
-            self._info_layer.add_flet_comp((
-                ft.Text(
-                    value=content + optional_content,
-                    color="#FFFFFF",
+            self._info_layer.add_children((
+                QText(
+                    expand=True,
+                    text=content + optional_content,
+                    text_colour="#FFFFFF",
+                    text_alignment=ft.alignment.top_left,
+                    size_rel_height=0.02,
                 ),
             ))
             self._context.page.update()
@@ -567,15 +588,15 @@ class GamePlayPage(QPage):
             ),
         ))
         hp_item.add_children(
-            QItem(
-                height_pct=1.0,
-                width_pct=2.0,
-                align=QAlign(x_pct=0.5, y_pct=0.5),
+            QText(
+                text=f"{char.get_hp()}",
+                text_colour="#FFFFFF",
+                size_rel_height=0.6,
                 rotate=ft.Rotate(angle=-0.25*pi, alignment=ft.alignment.center),
-                flets=(
-                    make_centre(ft.Text(value=f"{char.get_hp()}", color="#FFFFFF")),
-                ),
-            ),
+                width_pct=2.0,
+                height_pct=1.0,
+                align=QAlign(x_pct=0.5, y_pct=0.5),
+            )
         )
         equipments: ds.EquipmentStatuses = char.get_equipment_statuses()
         eq_map = {
@@ -748,15 +769,12 @@ class GamePlayPage(QPage):
                         src=f"assets/cards/OmniCardCard.png",
                         expand=True,
                     ),
-                    QItem(
+                    QText(
                         expand=True,
                         colour=ft.colors.with_opacity(0.2, "#000000"),
-                        flets=(
-                            make_centre(ft.Text(
-                                value=f"{game_state.get_player(pid).get_deck_cards().num_cards()}",
-                                color="#FFFFFF",
-                            )),
-                        ),
+                        text=f"{game_state.get_player(pid).get_deck_cards().num_cards()}",
+                        text_colour="#FFFFFF",
+                        size_rel_height=0.2,
                     ),
                 ),
             )
@@ -769,11 +787,11 @@ class GamePlayPage(QPage):
                         src=f"assets/dice/{elem_die_map[ds.Element.ANY]}Die.png",
                         expand=True,
                     ),
-                    QItem(
+                    QText(
                         expand=True,
-                        flets=(
-                            make_centre(ft.Text(value=f"{dice.num_dice()}", color="#FFFFFF")),
-                        ),
+                        text=f"{dice.num_dice()}",
+                        text_colour="#FFFFFF",
+                        size_rel_height=0.4,
                     ),
                 )
             )
@@ -828,11 +846,11 @@ class GamePlayPage(QPage):
                         src=f"assets/dice/{elem_die_map[ds.Element.ANY]}Die.png",
                         expand=True,
                     ),
-                    QItem(
+                    QText(
                         expand=True,
-                        flets=(
-                            make_centre(ft.Text(value=f"{dice.num_dice()}", color="#FFFFFF")),
-                        ),
+                        text=f"{dice.num_dice()}",
+                        text_colour="#FFFFFF",
+                        size_rel_height=0.4,
                     ),
                 ),
             )
@@ -846,15 +864,12 @@ class GamePlayPage(QPage):
                         src=f"assets/cards/OmniCardCard.png",
                         expand=True,
                     ),
-                    QItem(
+                    QText(
                         expand=True,
                         colour=ft.colors.with_opacity(0.2, "#000000"),
-                        flets=(
-                            make_centre(ft.Text(
-                                value=f"{game_state.get_player(pid).get_deck_cards().num_cards()}",
-                                color="#FFFFFF",
-                            )),
-                        ),
+                        text=f"{game_state.get_player(pid).get_deck_cards().num_cards()}",
+                        text_colour="#FFFFFF",
+                        size_rel_height=0.2,
                     ),
                 ),
             )
@@ -911,15 +926,15 @@ class GamePlayPage(QPage):
             width_height_pct=7 / 12,
             anchor=QAnchor(left=idx * 0.08, top=0.0),
             children=(
-                QItem(
+                QText(
                     width_pct=0.9,
                     height_pct=0.9,
                     align=QAlign(x_pct=0.5, y_pct=0.5),
                     colour="#A87845",
                     border=ft.border.all(1, "black"),
-                    flets=(
-                        make_centre(ft.Text(value=card.name(), color="#FFFFFF")),
-                    )
+                    text=card.name(),
+                    text_colour="#FFFFFF",
+                    size_rel_height=0.1,
                 ),
                 QImage(
                     src=f"assets/cards/{card.name()}Card.png",
