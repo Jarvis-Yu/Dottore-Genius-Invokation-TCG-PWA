@@ -1,6 +1,6 @@
 from __future__ import annotations
 from math import pi
-from typing import Any
+from typing import Any, Callable, cast
 
 import flet as ft
 import dgisim as ds
@@ -36,10 +36,16 @@ class GamePlayPage(QPage):
                 object_name="info-layer",
                 expand=True,
             ),
+            prompt_action_layer := QItem(
+                object_name="prompt-action-layer",
+                expand=True,
+            )
         ))
         self._game_layer = game_layer
-        self._info_layer = info_layer
         self._menu_layer = menu_layer
+        self._info_layer = info_layer
+        self._prompt_action_layer = prompt_action_layer
+
         self._menu_layer.add_flet_comp(ft.Row(
             controls=[
                 top_right_col_menu := ft.Column(
@@ -61,165 +67,23 @@ class GamePlayPage(QPage):
 
         # tmp code
         self._home_pid = ds.Pid.P1
-        self._example_game_state = ds.GameState.from_default().factory().f_player1(
-            lambda p1: p1.factory().f_characters(
-                lambda cs: cs.factory().active_character_id(
-                    2
-                ).f_character(
-                    1,
-                    lambda c: c.factory().energy(
-                        2
-                    ).elemental_aura(
-                        ds.ElementalAura.from_default().add(ds.Element.HYDRO),
-                    ).f_equipments(
-                        lambda es: es.update_status(
-                            dsst.GamblersEarringsStatus()
-                        ).update_status(
-                            dsst.AmosBowStatus()
-                        )
-                    ).build()
-                ).f_character(
-                    2,
-                    lambda c: c.factory().elemental_aura(
-                        ds.ElementalAura.from_default().add(ds.Element.ELECTRO),
-                    ).f_equipments(
-                        lambda es: es.update_status(
-                            dsst.AmosBowStatus()
-                        ).update_status(
-                            dsst.ColdBloodedStrikeStatus()
-                        ).update_status(
-                            dsst.GamblersEarringsStatus()
-                        )
-                    ).f_character_statuses(
-                        lambda ss: ss.update_status(
-                            dsst.MushroomPizzaStatus()
-                        ).update_status(
-                            dsst.SatiatedStatus()
-                        ).update_status(
-                            dsst.LotusFlowerCrispStatus()
-                        )
-                    ).build()
-                ).f_character(
-                    3,
-                    lambda c: c.factory().hp(0).alive(False).build()
-                ).build()
-            ).f_summons(
-                lambda ss: ss.update_summon(
-                    dssm.UshiSummon()
-                ).update_summon(
-                    dssm.OzSummon()
-                ).update_summon(
-                    dssm.OceanicMimicFrogSummon()
-                ).update_summon(
-                    dssm.ChainsOfWardingThunderSummon()
-                )
-            ).f_supports(
-                lambda ss: ss.update_support(
-                    dssp.LibenSupport(sid=1)
-                ).update_support(
-                    dssp.LiyueHarborWharfSupport(sid=2)
-                ).update_support(
-                    dssp.ChangTheNinthSupport(sid=3)
-                ).update_support(
-                    dssp.PaimonSupport(sid=4)
-                )
-            ).f_dice(
-                lambda _: ds.ActualDice.from_random(16, excepted_elems=set((
-                    ds.Element.PYRO,
-                    ds.Element.HYDRO,
-                    ds.Element.ELECTRO,
-                )))
-            ).f_hand_cards(
-                lambda hcs: ds.Cards({
-                    dscd.ProphecyOfSubmersion: 1,
-                    dscd.IHaventLostYet: 2,
-                    dscd.Starsigns: 1,
-                    dscd.ElementalResonanceWovenThunder: 2,
-                    dscd.LiyueHarborWharf: 2,
-                    dscd.LeaveItToMe: 2,
-                })
-            ).build()
-        ).f_player2(
-            lambda p2: p2.factory().f_characters(
-                lambda cs: cs.factory().active_character_id(
-                    3
-                ).f_character(
-                    1,
-                    lambda c: c.factory().elemental_aura(
-                        ds.ElementalAura.from_default().add(ds.Element.PYRO),
-                    ).hp(
-                        0
-                    ).build()
-                ).f_character(
-                    2,
-                    lambda c: c.factory().energy(
-                        1
-                    ).elemental_aura(
-                        ds.ElementalAura.from_default().add(
-                            ds.Element.DENDRO
-                        ).add(
-                            ds.Element.CRYO
-                        ),
-                    ).build()
-                ).f_character(
-                    3,
-                    lambda c: c.factory().energy(
-                        1
-                    ).f_equipments(
-                        lambda es: es.update_status(
-                            dsst.GamblersEarringsStatus()
-                        ).update_status(
-                            dsst.ColdBloodedStrikeStatus()
-                        )
-                    ).build()
-                ).build()
-            ).f_summons(
-                lambda ss: ss.update_summon(
-                    dssm.AutumnWhirlwindSummon()
-                ).update_summon(
-                    dssm.BakeKurageSummon()
-                ).update_summon(
-                    dssm.CuileinAnbarSummon()
-                ).update_summon(
-                    dssm.SesshouSakuraSummon()
-                )
-            ).f_supports(
-                lambda ss: ss.update_support(
-                    dssp.NRESupport(sid=1)
-                ).update_support(
-                    dssp.KnightsOfFavoniusLibrarySupport(sid=2)
-                ).update_support(
-                    dssp.XudongSupport(sid=3)
-                ).update_support(
-                    dssp.ParametricTransformerSupport(sid=4)
-                )
-            ).f_dice(
-                lambda _: ds.ActualDice.from_random(8, excepted_elems=set((
-                    ds.Element.GEO,
-                    ds.Element.ANEMO,
-                    ds.Element.CRYO,
-                )))
-            ).f_hand_cards(
-                lambda hcs: ds.Cards({
-                    dscd.ElementalResonanceEnduringRock: 1,
-                    dscd.SumeruCity: 2,
-                    dscd.TheShrinesSacredShade: 1,
-                })
-            ).f_combat_statuses(
-                lambda ss: ss.update_status(
-                    dsst.RainbowBladeworkStatus()
-                ).update_status(
-                    dsst.RainSwordStatus()
-                )
-            ).build()
-        ).build().prespective_view(self._home_pid)
         self.rerender()
 
     def _back_to_home(self, _: Any) -> None:
         self._context.current_route = Route.GAME
 
+    def submit_action(self, action: ds.PlayerAction) -> None:
+        self._context.game_data.take_action(self._home_pid, action)
+        self.rerender()
+        self.root_component.update()
+
     def rerender(self, _: Any = None) -> None:
-        self.render_state(self._example_game_state)
+        self._curr_state = self._context.game_data.curr_game_state(self._home_pid)
+        self._act_gen: list[ds.ActionGenerator] | None = None
+        if self._curr_state.waiting_for() is self._home_pid:
+            self._act_gen = [self._curr_state.action_generator(self._home_pid)]
+        self.render_prompt_action()
+        self.render_state(self._curr_state)
 
     def render_state(self, game_state: ds.GameState) -> None:
         self._top_right_col_menu.controls.clear()
@@ -236,6 +100,190 @@ class GamePlayPage(QPage):
         ))
 
         return
+
+    def render_prompt_action(self) -> None:
+        self._prompt_action_layer.clear()
+        if self._act_gen is None:
+            return
+        if len(self._act_gen) == 1:
+            mode = self._curr_state.get_mode()
+            print("matching", type(self._curr_state.get_phase()))
+            match type(self._curr_state.get_phase()):
+                case mode.card_select_phase:
+                    choices = self._act_gen[0].choices()
+                    if ds.ActionType.SELECT_CARDS in choices:
+                        self._show_select_cards([
+                            self._act_gen[0],
+                            self._act_gen[0].choose(ds.ActionType.SELECT_CARDS),
+                        ])
+                case mode.starting_hand_select_phase:
+                    ...
+
+    def _show_select_cards(self, pres: list[ds.ActionGenerator]) -> None:
+        choices = pres[-1].choices()
+        assert isinstance(choices, ds.Cards)
+        self._prompt_action_layer.clear()
+        self._prompt_action_layer.add_children((
+            background := QItem(
+                object_name="click_cover",
+                expand=True,
+                colour=ft.colors.with_opacity(0.5, "#000000"),
+            ),
+        ))
+        background.add_flet_comp(ft.GestureDetector(
+            on_tap=lambda _: None,
+            mouse_cursor=ft.MouseCursor.BASIC,
+        ))  # block press
+        cards: list[type[ds.Card]] = []
+        for card in choices:
+            for _ in range(choices[card]):
+                cards.append(card)
+
+        selection = ds.Cards({})
+
+        def select_card(card: type[ds.Card]) -> None:
+            nonlocal selection
+            selection = selection.add(card)
+
+        def remove_card(card: type[ds.Card]) -> None:
+            nonlocal selection
+            selection = selection.remove(card)
+
+        background.add_flet_comp(
+            make_centre(
+                ft.Row(
+                    controls=[
+                        self._selectable_card(
+                            card,
+                            select_card,
+                            remove_card,
+                        ).root_component
+                        for card in cards
+                    ],
+                    expand=True,
+                    wrap=True,
+                )
+            ),
+        )
+
+        def check(_: ft.ControlEvent) -> None:
+            last_act_gen = pres[-1]
+            try:
+                new_act_gen = last_act_gen.choose(selection)
+            except Exception:
+                dlg = ft.AlertDialog(title=ft.Text("Invalid Selection"))
+                dlg.open = True
+                self._context.page.dialog = dlg
+                self._context.page.update()
+                return
+            if new_act_gen.filled():
+                self.submit_action(new_act_gen.generate_action())
+                return
+            pres.append(new_act_gen)
+            self._act_gen = pres
+            self.rerender()
+            self.root_component.update()
+
+        def close(_: ft.ControlEvent) -> None:
+            assert len(self._act_gen) == 1
+            try:
+                new_act_gen = self._act_gen[0].choose(ds.ActionType.END_ROUND)
+            except Exception:
+                dlg = ft.AlertDialog(title=ft.Text("Cannot Cancel"))
+                dlg.open = True
+                self._context.page.dialog = dlg
+                self._context.page.update()
+                return
+            if new_act_gen.filled():
+                self.submit_action(new_act_gen.generate_action())
+                return
+            self._act_gen.append(new_act_gen)
+            self.rerender()
+            self.root_component.update()
+
+        background.add_children((
+            QItem(
+                width_pct=1.0,
+                height_pct=0.1,
+                anchor=QAnchor(left=0.0, bottom=1.0),
+                flets=(
+                    ft.Row(
+                        controls=[
+                            ft.IconButton(
+                                icon=ft.icons.CLOSE,
+                                on_click=close,
+                                style=self._context.settings.button_style,
+                            ),
+                            ft.IconButton(
+                                icon=ft.icons.CHECK,
+                                on_click=check,
+                                style=self._context.settings.button_style,
+                            ),
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_EVENLY,
+                        expand=True,
+                    ),
+                )
+            ),
+        ))
+
+    def _selectable_card(
+            self,
+            card: type[ds.Card],
+            on_selected: Callable[[type[ds.Card]], None] = lambda _: None,
+            on_removed: Callable[[type[ds.Card]], None] = lambda _: None,
+    ) -> QItem:
+        selected = False
+        item = QItem(
+            ref_parent=self._prompt_action_layer,
+            height_pct=0.2,
+            width_height_pct=7 / 12,
+            children=(
+                QText(
+                    width_pct=0.9,
+                    height_pct=0.9,
+                    align=QAlign(x_pct=0.5, y_pct=0.5),
+                    colour="#A87845",
+                    border=ft.border.all(1, "#DBC9AF"),
+                    text=f"{card.__name__}",
+                    text_colour="#000000",
+                    size_rel_height=0.1,
+                ),
+                QImage(
+                    expand=True,
+                    src=f"assets/cards/{card.name()}Card.png",
+                ),
+                click_pane := QItem(
+                    expand=True,
+                ),
+                selection_indicator := QItem(
+                    expand=True,
+                )
+            ),
+        )
+        def clicked(_: ft.ControlEvent) -> None:
+            nonlocal selected
+            if selected:
+                selected = False
+                on_removed(card)
+                selection_indicator.clear()
+            else:
+                selected = True
+                on_selected(card)
+                selection_indicator.add_children((
+                    QItem(
+                        border=ft.border.all(5, "#00FF00"),
+                        expand=True,
+                    ),
+                ))
+            selection_indicator.root_component.update()
+
+        click_pane.add_flet_comp(ft.GestureDetector(
+            on_tap=clicked,
+            mouse_cursor=ft.MouseCursor.CLICK,
+            expand=True,
+        ))
+        return item
 
     def _char_zone(
             self,
@@ -447,7 +495,7 @@ class GamePlayPage(QPage):
     ) -> QItem:
         chars = game_state.get_player(pid).get_characters()
         char = chars.just_get_character(char_id)
-        is_active = char.get_id() == chars.just_get_active_character_id()
+        is_active = char.get_id() == chars.get_active_character_id()
         inactive_top, active_top = (0.1, 0.0) if pid is self._home_pid else (0.0, 0.1)
         item = QItem(
             object_name=f"char-{pid}-{char_id}-{char.name()}",
@@ -519,6 +567,7 @@ class GamePlayPage(QPage):
                 ft.Container(
                     content=ft.GestureDetector(
                         on_tap=exit,
+                        mouse_cursor=ft.MouseCursor.CLICK,
                     ),
                     expand=True,
                     bgcolor=ft.colors.with_opacity(0.7, "#000000"),
@@ -568,6 +617,7 @@ class GamePlayPage(QPage):
         char_card.add_flet_comp((
             ft.GestureDetector(
                 on_tap=show_char_detail,
+                mouse_cursor=ft.MouseCursor.CLICK,
             ),
         ))
         char_card.add_children((
@@ -578,7 +628,7 @@ class GamePlayPage(QPage):
                 align=QAlign(x_pct=0.0, y_pct=0.0),
                 colour="#A87845",
                 border=ft.border.all(2, "#DBC9AF"),
-                rotate=ft.Rotate(angle=0.25*pi, alignment=ft.alignment.center),
+                rotate=ft.Rotate(angle=0.25 * pi, alignment=ft.alignment.center),
             ),
             equip_item := QItem(
                 object_name=f"char-{pid}-{char_id}-{char.name()}-equip",
@@ -592,7 +642,7 @@ class GamePlayPage(QPage):
                 text=f"{char.get_hp()}",
                 text_colour="#FFFFFF",
                 size_rel_height=0.6,
-                rotate=ft.Rotate(angle=-0.25*pi, alignment=ft.alignment.center),
+                rotate=ft.Rotate(angle=-0.25 * pi, alignment=ft.alignment.center),
                 width_pct=2.0,
                 height_pct=1.0,
                 align=QAlign(x_pct=0.5, y_pct=0.5),
@@ -636,7 +686,7 @@ class GamePlayPage(QPage):
                         1, "#EEEE00" if energy <= char.get_energy() else "#A28E75"
                     ),
                     border=ft.border.all(2, "#DBC9AF"),
-                    rotate=ft.Rotate(angle=0.25*pi, alignment=ft.alignment.center),
+                    rotate=ft.Rotate(angle=0.25 * pi, alignment=ft.alignment.center),
                 )
             ))
         elem_colour_map = {

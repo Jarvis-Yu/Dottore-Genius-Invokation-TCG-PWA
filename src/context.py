@@ -7,6 +7,7 @@ from typing import Any, Callable, Literal
 import flet as ft
 from dgisim import Pid
 
+from .game_data import GameData, PlayerSettings, GamePlaySettings
 from .routes import Route
 
 
@@ -52,38 +53,6 @@ class Settings:
         )
 
 
-@dataclass(kw_only=True)
-class PlayerSettings:
-    type: Literal["P", "E"]
-    random_deck: bool = False
-
-
-@dataclass(kw_only=True)
-class GamePlaySettings:
-    primary_player: Pid
-    primary_settings: PlayerSettings
-    oppo_settings: PlayerSettings
-    completely_random: bool = False
-
-    @classmethod
-    def from_random_PVE(cls) -> None:
-        return GamePlaySettings(
-            primary_player=Pid.P1,
-            primary_settings=PlayerSettings(type="P", random_deck=True),
-            oppo_settings=PlayerSettings(type="E", random_deck=True),
-            completely_random=True,
-        )
-
-    @classmethod
-    def from_random_EVE(cls) -> None:
-        return GamePlaySettings(
-            primary_player=Pid.P1,
-            primary_settings=PlayerSettings(type="E", random_deck=True),
-            oppo_settings=PlayerSettings(type="E", random_deck=True),
-            completely_random=True,
-        )
-
-
 @dataclass
 class Size:
     x: int
@@ -100,7 +69,7 @@ class AppContext:
             settings: Settings = Settings(),
     ) -> None:
         self._current_route = current_route
-        self._game_mode: None | GamePlaySettings = None
+        self._game_data = GameData()
         self._on_curr_route_changed: set[Callable[[Route], None]] = AddSensitiveSet(
             lambda f: f(self._current_route)
         )
@@ -134,13 +103,17 @@ class AppContext:
             on_curr_route_changed(self._current_route)
 
     @property
+    def game_data(self) -> GameData:
+        return self._game_data
+
+    @property
     def game_mode(self) -> GamePlaySettings:
-        assert self._game_mode is not None
-        return self._game_mode
+        assert self._game_data.curr_game_mode is not None
+        return self._game_data.curr_game_mode
 
     @game_mode.setter
     def game_mode(self, new_mode: GamePlaySettings) -> None:
-        self._game_mode = new_mode
+        self._game_data.curr_game_mode = new_mode
 
     @property
     def on_current_route_changed(self) -> set[Callable[[Route], None]]:

@@ -43,8 +43,10 @@ class GamePage(QPage):
 
     def goto_random_PVE(self, _: Any) -> None:
         self._context.game_mode = GamePlaySettings.from_random_PVE()
+        self._context.game_data.init_game()
         self._context.current_route = Route.GAME_PLAY
 
     def goto_random_EVE(self, _: Any) -> None:
         self._context.game_mode = GamePlaySettings.from_random_EVE()
+        self._context.game_data.init_game()
         self._context.current_route = Route.GAME_PLAY
