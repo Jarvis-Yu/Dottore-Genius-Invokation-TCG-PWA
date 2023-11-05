@@ -65,7 +65,6 @@ class GamePlayPage(QPage):
         )
         self._top_right_col_menu.controls.append(self._button_exit)
 
-        # tmp code
         self._home_pid = ds.Pid.P1
         self.rerender()
 
@@ -73,6 +72,7 @@ class GamePlayPage(QPage):
         self._context.current_route = Route.GAME
 
     def submit_action(self, action: ds.PlayerAction) -> None:
+        self._act_gen = []
         self._context.game_data.take_action(self._home_pid, action)
         self.rerender()
         self.root_component.update()
@@ -846,6 +846,15 @@ class GamePlayPage(QPage):
                 )
             )
             info_row.controls.extend((card_info.root_component, dice_info.root_component))
+            if game_state.get_player(self._home_pid).in_action_phase():
+                info_row.controls.append(
+                    QImage(
+                        ref_parent=card_info,
+                        height_pct=0.7,
+                        width_height_pct=1.0,
+                        src=f"assets/gif/active.gif",
+                    ).root_component
+                )
             dice_row_item.add_flet_comp((
                 ft.Row(
                     controls=[
@@ -927,6 +936,15 @@ class GamePlayPage(QPage):
                 card_info.root_component,
                 dice_info.root_component,
             ))
+            if game_state.get_player(self._home_pid.other()).in_action_phase():
+                info_row.controls.append(
+                    QImage(
+                        ref_parent=card_info,
+                        height_pct=0.7,
+                        width_height_pct=1.0,
+                        src=f"assets/gif/active.gif",
+                    ).root_component
+                )
         return item
 
     def _cards(

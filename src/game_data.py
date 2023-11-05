@@ -52,6 +52,12 @@ class GamePlaySettings:
             # completely_random=True,
         )
 
+    def setting_of(self, pid: ds.Pid) -> PlayerSettings:
+        if pid is self.primary_player:
+            return self.primary_settings
+        else:
+            return self.oppo_settings
+
     def as_tuple(self) -> tuple[ds.Pid, tuple[str, bool], tuple[str, bool]]:
         return (
             self.primary_player,
@@ -125,6 +131,31 @@ class Match:
         node.inter_states = gsm.get_history()[:-1]
         node.stop_state = gsm.get_history()[-1]
 
+    def agent(self, pid: ds.Pid) -> ds.PlayerAgent:
+        if pid is ds.Pid.P1:
+            return self._agent1
+        else:
+            return self._agent2
+
+    def agent_action_step(self, pid: ds.Pid) -> None:
+        assert (
+            self._curr_match_node.stop_state is not None
+            and self._curr_match_node.stop_state.waiting_for() is pid
+        )
+        agent = self.agent(pid)
+        try:
+            action = agent.choose_action([self._curr_match_node.stop_state], pid)
+        except Exception as e:
+            print("Agent cannot provide a valid action:", e)
+            return
+        self._curr_match_node.action = action
+        try:
+            next_state = self._curr_match_node.stop_state.action_step(pid, action)
+            assert next_state is not None
+        except Exception as e:
+            print(e)
+            return
+        self.new_node(next_state)
 
 class GameData:
     def __init__(self) -> None:
@@ -141,7 +172,11 @@ class GameData:
                 or self.matches[curr_mode_tuple].curr_node.is_terminal()
         ):
             self.matches[curr_mode_tuple] = Match()
+        else:
+            # TODO: remove
+            self.matches[curr_mode_tuple] = Match()
         self.curr_match = self.matches[curr_mode_tuple]
+        self.try_auto_step()
 
     def take_action(self, pid: ds.Pid, action: ds.PlayerAction) -> None:
         """
@@ -156,6 +191,14 @@ class GameData:
             print(e)
             return
         self.curr_match.new_node(next_state)
+        self.try_auto_step()
+
+    def try_auto_step(self) -> None:
+        waiting_for = self.curr_match.curr_node.latest_state().waiting_for()
+        assert waiting_for is not None
+        player_settings = self.curr_game_mode.setting_of(waiting_for)
+        if player_settings.type == "E":
+            self.curr_match.agent_action_step(waiting_for)
 
     def require_action(self, perspective: ds.Pid) -> bool:
         return self.curr_match.curr_node.latest_state().waiting_for() is perspective

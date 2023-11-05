@@ -27,17 +27,17 @@ class GamePage(QPage):
                 on_click=self.goto_random_PVE,
                 style=context.settings.button_style,
             ),
-            ft.ElevatedButton(
-                text="Random EVE",
-                col=button_col,
-                on_click=self.goto_random_EVE,
-                style=context.settings.button_style,
-            ),
-            ft.ElevatedButton(
-                text="WIP",
-                col=button_col,
-                style=context.settings.button_style
-            ),
+            # ft.ElevatedButton(
+            #     text="Random EVE",
+            #     col=button_col,
+            #     on_click=self.goto_random_EVE,
+            #     style=context.settings.button_style,
+            # ),
+            # ft.ElevatedButton(
+            #     text="WIP",
+            #     col=button_col,
+            #     style=context.settings.button_style
+            # ),
         ])
         self.add_flet_comp(self._responsive_rows)
 
