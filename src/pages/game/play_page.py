@@ -792,6 +792,18 @@ class GamePlayPage(QPage):
         )
         return item
 
+    ELEM_NAME_MAP: ds.HashableDict[ds.Element, str] = ds.HashableDict({
+        ds.Element.PYRO: "Pyro",
+        ds.Element.HYDRO: "Hydro",
+        ds.Element.ANEMO: "Anemo",
+        ds.Element.ELECTRO: "Electro",
+        ds.Element.DENDRO: "Dendro",
+        ds.Element.CRYO: "Cryo",
+        ds.Element.GEO: "Geo",
+        ds.Element.OMNI: "Omni",
+        ds.Element.ANY: "Any",
+    })
+
     def _character(
             self,
             ref_parent: QItem,
@@ -995,24 +1007,15 @@ class GamePlayPage(QPage):
                     rotate=ft.Rotate(angle=0.25 * pi, alignment=ft.alignment.center),
                 )
             ))
-        elem_colour_map = {
-            ds.Element.PYRO: "#E9683E",
-            ds.Element.HYDRO: "#4CBBEA",
-            ds.Element.ANEMO: "#6CBE9F",
-            ds.Element.ELECTRO: "#A57FB6",
-            ds.Element.DENDRO: "#9AC546",
-            ds.Element.CRYO: "#96D1DC",
-            ds.Element.GEO: "#F6AD43",
-        }
-        elem_name_map = {
-            ds.Element.PYRO: "pyro",
-            ds.Element.HYDRO: "hydro",
-            ds.Element.ANEMO: "anemo",
-            ds.Element.ELECTRO: "electro",
-            ds.Element.DENDRO: "dendro",
-            ds.Element.CRYO: "cryo",
-            ds.Element.GEO: "geo",
-        }
+        # elem_colour_map = {
+        #     ds.Element.PYRO: "#E9683E",
+        #     ds.Element.HYDRO: "#4CBBEA",
+        #     ds.Element.ANEMO: "#6CBE9F",
+        #     ds.Element.ELECTRO: "#A57FB6",
+        #     ds.Element.DENDRO: "#9AC546",
+        #     ds.Element.CRYO: "#96D1DC",
+        #     ds.Element.GEO: "#F6AD43",
+        # }
         aura_bar.add_flet_comp(
             aura_row := ft.Row(
                 controls=[
@@ -1024,7 +1027,7 @@ class GamePlayPage(QPage):
                         ),
                         elem_frame.add_flet_comp(
                             ft.Image(
-                                src=f"assets/elem_icons/{elem_name_map[elem]}.png",
+                                src=f"assets/elem_icons/{self.ELEM_NAME_MAP[elem]}.png",
                                 fit=ft.ImageFit.FILL,
                             )
                         )
@@ -1073,18 +1076,6 @@ class GamePlayPage(QPage):
                     ),
                 ))
         return item
-
-    ELEM_NAME_MAP: ds.HashableDict[ds.Element, str] = ds.HashableDict({
-        ds.Element.PYRO: "Pyro",
-        ds.Element.HYDRO: "Hydro",
-        ds.Element.ANEMO: "Anemo",
-        ds.Element.ELECTRO: "Electro",
-        ds.Element.DENDRO: "Dendro",
-        ds.Element.CRYO: "Cryo",
-        ds.Element.GEO: "Geo",
-        ds.Element.OMNI: "Omni",
-        ds.Element.ANY: "Any",
-    })
 
     def _dice(
             self,
