@@ -1,4 +1,5 @@
 from __future__ import annotations
+from collections import defaultdict
 from math import pi
 from typing import Any, Callable, cast
 
@@ -117,7 +118,17 @@ class GamePlayPage(QPage):
                             self._act_gen[0].choose(ds.ActionType.SELECT_CARDS),
                         ])
                 case mode.starting_hand_select_phase:
-                    ...
+                    choices = self._act_gen[0].choices()
+                    self._show_select_chars(self._act_gen)
+                case mode.roll_phase:
+                    choices = self._act_gen[0].choices()
+                    if ds.ActionType.SELECT_DICE in choices:
+                        self._show_select_dice([
+                            self._act_gen[0],
+                            self._act_gen[0].choose(ds.ActionType.SELECT_DICE),
+                        ])
+                    else:
+                        self.submit_action(ds.EndRoundAction())
 
     def _show_select_cards(self, pres: list[ds.ActionGenerator]) -> None:
         choices = pres[-1].choices()
@@ -227,6 +238,300 @@ class GamePlayPage(QPage):
             ),
         ))
 
+    def _show_select_chars(self, pres: list[ds.ActionGenerator]) -> None:
+        """ Character Selector for Starting Hand Phase """
+        choices = pres[-1].choices()
+        assert isinstance(choices, tuple) and isinstance(choices[0], int)
+        chars = [
+            char
+            for char in self._curr_state.get_player(self._home_pid).get_characters()
+            if char.get_id() in choices
+        ]
+        self._prompt_action_layer.clear()
+        self._prompt_action_layer.add_children((
+            background := QItem(
+                object_name="click_cover",
+                expand=True,
+                colour=ft.colors.with_opacity(0.5, "#000000"),
+            ),
+        ))
+        background.add_flet_comp(ft.GestureDetector(
+            on_tap=lambda _: None,
+            mouse_cursor=ft.MouseCursor.BASIC,
+        ))  # block press
+        background.add_flet_comp(
+            make_centre(
+                char_row := ft.Row(
+                    expand=True,
+                    wrap=True,
+                )
+            ),
+        )
+
+        selection: int | None = None
+
+        char_map: dict[int, QItem] = {}
+
+        def clicked(char_id: int) -> None:
+            nonlocal selection
+            if selection == char_id:
+                return
+            for item in char_map.values():
+                item.clear()
+            selection = char_id
+            char_map[char_id].add_children(
+                QItem(
+                    border=ft.border.all(5, "#00FF00"),
+                    expand=True,
+                ),
+            )
+            for item in char_map.values():
+                item.root_component.update()
+
+        for char in chars:
+            def local_clicked(id: int) -> Callable[[ft.ControlEvent], None]:
+                def f(_: ft.ControlEvent) -> None:
+                    clicked(id)
+                return f
+            char_row.controls.append(
+                QItem(
+                    ref_parent=background,
+                    height_pct=0.2,
+                    width_height_pct=7 / 12,
+                    children=(
+                        QText(
+                            width_pct=0.9,
+                            height_pct=0.9,
+                            align=QAlign(x_pct=0.5, y_pct=0.5),
+                            colour="#A87845",
+                            border=ft.border.all(1, "#DBC9AF"),
+                            text=f"{char.name()}",
+                            text_colour="#000000",
+                            size_rel_height=0.1,
+                        ),
+                        QImage(
+                            expand=True,
+                            src=f"assets/char_cards/{char.name()}.png",
+                        ),
+                        QItem(
+                            expand=True,
+                            flets=(
+                                ft.GestureDetector(
+                                    on_tap=local_clicked(char.get_id()),
+                                    mouse_cursor=ft.MouseCursor.CLICK,
+                                    expand=True,
+                                ),
+                            ),
+                        ),
+                        selection_indicator := QItem(
+                            expand=True,
+                        ),
+                    )
+                ).root_component
+            )
+            char_map[char.get_id()] = selection_indicator
+        
+        def check(_: ft.ControlEvent) -> None:
+            last_act_gen = pres[-1]
+            try:
+                new_act_gen = last_act_gen.choose(selection)
+            except Exception:
+                dlg = ft.AlertDialog(title=ft.Text("Invalid Selection"))
+                dlg.open = True
+                self._context.page.dialog = dlg
+                self._context.page.update()
+                return
+            if new_act_gen.filled():
+                self.submit_action(new_act_gen.generate_action())
+                return
+            pres.append(new_act_gen)
+            self._act_gen = pres
+            self.rerender()
+            self.root_component.update()
+        
+        background.add_children((
+            QItem(
+                width_pct=1.0,
+                height_pct=0.1,
+                anchor=QAnchor(left=0.0, bottom=1.0),
+                flets=(
+                    ft.Row(
+                        controls=[
+                            ft.IconButton(
+                                icon=ft.icons.CHECK,
+                                on_click=check,
+                                style=self._context.settings.button_style,
+                            ),
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_EVENLY,
+                        expand=True,
+                    ),
+                )
+            ),
+        ))
+
+    def _show_select_dice(self, pres: list[ds.ActionGenerator]) -> None:
+        choices = pres[-1].choices()
+        assert isinstance(choices, ds.ActualDice)
+
+        self._prompt_action_layer.clear()
+        self._prompt_action_layer.add_children((
+            background := QItem(
+                object_name="click_cover",
+                expand=True,
+                colour=ft.colors.with_opacity(0.5, "#000000"),
+            ),
+        ))
+        background.add_flet_comp(ft.GestureDetector(
+            on_tap=lambda _: None,
+            mouse_cursor=ft.MouseCursor.BASIC,
+        ))  # block press
+        background.add_flet_comp(
+            make_centre(
+                dice_row := ft.Row(
+                    expand=True,
+                    wrap=True,
+                )
+            ),
+        )
+
+        is_down: bool = False
+        down_id: int = 0
+
+        def on_down(_: ft.ControlEvent) -> None:
+            nonlocal is_down
+            nonlocal down_id
+            down_id += 1
+            is_down = True
+
+        def on_release(_: ft.ControlEvent) -> None:
+            nonlocal is_down
+            is_down = False
+
+        background.add_flet_comp(
+            ft.TransparentPointer(
+                content=ft.GestureDetector(
+                    on_pan_start=on_down,
+                    on_pan_end=on_release,
+                ),
+                expand=True,
+            )
+        )
+
+        selection: dict[ds.Element, int] = defaultdict(int)
+
+        selection_timestamp: dict[tuple[ds.Element, int], int] = defaultdict(int)
+        selection_status: dict[tuple[ds.Element, int], bool] = defaultdict(bool)
+        selection_frames: dict[tuple[ds.Element, int], QItem] = {}
+
+        def select_elem(elem: ds.Element) -> None:
+            selection[elem] += 1
+
+        def remove_elem(elem: ds.Element) -> None:
+            selection[elem] -= 1
+
+        def flip_die(elem: ds.Element, id: int) -> None:
+            if selection_status[(elem, id)]:
+                remove_elem(elem)
+                selection_frames[(elem, id)].clear()
+            else:
+                select_elem(elem)
+                selection_frames[(elem, id)].add_children((
+                    QItem(
+                        expand=True,
+                        border=ft.border.all(5, "#00FF00"),
+                    ),
+                ))
+            selection_frames[(elem, id)].root_component.update()
+            selection_status[(elem, id)] = not selection_status[(elem, id)]
+
+        def enter_die(elem: ds.Element, id: int) -> Callable[[ft.ControlEvent], None]:
+            def f(_: ft.ControlEvent) -> None:
+                if not is_down:
+                    return
+                if selection_timestamp[(elem, id)] == down_id:
+                    return
+                selection_timestamp[(elem, id)] = down_id
+                flip_die(elem, id)
+            return f
+
+        def tap_die(elem: ds.Element, id: int) -> Callable[[ft.ControlEvent], None]:
+            def f(_: ft.ControlEvent) -> None:
+                flip_die(elem, id)
+            return f
+
+        for elem in choices.readonly_dice_ordered(self._curr_state.get_player(self._home_pid)):
+            for i in range(choices[elem]):
+                dice_row.controls.append(
+                    QItem(
+                        ref_parent=background,
+                        height_pct=0.07,
+                        width_height_pct=1.0,
+                        children=(
+                            self._die(elem),
+                            frame := QItem(
+                                expand=True,
+                            )
+                        ),
+                        flets=(
+                            ft.GestureDetector(
+                                on_tap=tap_die(elem, i),
+                                on_enter=enter_die(elem, i),
+                                mouse_cursor=ft.MouseCursor.CLICK,
+                                expand=True,
+                            ),
+                        ),
+                    ).root_component
+                )
+                selection_frames[(elem, i)] = frame
+
+        def close(_: ft.ControlEvent) -> None:
+            self.submit_action(ds.EndRoundAction())
+
+        def check(_: ft.ControlEvent) -> None:
+            last_act_gen = pres[-1]
+            try:
+                new_act_gen = last_act_gen.choose(ds.ActualDice(selection))
+            except Exception:
+                dlg = ft.AlertDialog(title=ft.Text("Invalid Selection"))
+                dlg.open = True
+                self._context.page.dialog = dlg
+                self._context.page.update()
+                return
+            if new_act_gen.filled():
+                self.submit_action(new_act_gen.generate_action())
+                return
+            pres.append(new_act_gen)
+            self._act_gen = pres
+            self.rerender()
+            self.root_component.update()
+        
+        background.add_children((
+            QItem(
+                width_pct=1.0,
+                height_pct=0.1,
+                anchor=QAnchor(left=0.0, bottom=1.0),
+                flets=(
+                    ft.Row(
+                        controls=[
+                            ft.IconButton(
+                                icon=ft.icons.CLOSE,
+                                on_click=close,
+                                style=self._context.settings.button_style,
+                            ),
+                            ft.IconButton(
+                                icon=ft.icons.CHECK,
+                                on_click=check,
+                                style=self._context.settings.button_style,
+                            ),
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_EVENLY,
+                        expand=True,
+                    ),
+                )
+            ),
+        ))
+
     def _selectable_card(
             self,
             card: type[ds.Card],
@@ -236,7 +541,7 @@ class GamePlayPage(QPage):
         selected = False
         item = QItem(
             ref_parent=self._prompt_action_layer,
-            height_pct=0.2,
+            height_pct=0.15,
             width_height_pct=7 / 12,
             children=(
                 QText(
@@ -261,6 +566,7 @@ class GamePlayPage(QPage):
                 )
             ),
         )
+
         def clicked(_: ft.ControlEvent) -> None:
             nonlocal selected
             if selected:
@@ -768,22 +1074,23 @@ class GamePlayPage(QPage):
                 ))
         return item
 
+    ELEM_NAME_MAP: ds.HashableDict[ds.Element, str] = ds.HashableDict({
+        ds.Element.PYRO: "Pyro",
+        ds.Element.HYDRO: "Hydro",
+        ds.Element.ANEMO: "Anemo",
+        ds.Element.ELECTRO: "Electro",
+        ds.Element.DENDRO: "Dendro",
+        ds.Element.CRYO: "Cryo",
+        ds.Element.GEO: "Geo",
+        ds.Element.OMNI: "Omni",
+        ds.Element.ANY: "Any",
+    })
+
     def _dice(
             self,
             pid: ds.Pid,
             game_state: ds.GameState,
     ) -> QItem:
-        elem_die_map = {
-            ds.Element.PYRO: "Pyro",
-            ds.Element.HYDRO: "Hydro",
-            ds.Element.ANEMO: "Anemo",
-            ds.Element.ELECTRO: "Electro",
-            ds.Element.DENDRO: "Dendro",
-            ds.Element.CRYO: "Cryo",
-            ds.Element.GEO: "Geo",
-            ds.Element.OMNI: "Omni",
-            ds.Element.ANY: "Any",
-        }
         dice = game_state.get_player(pid).get_dice()
         if pid is self._home_pid:
             die_list: list[ds.Element] = []
@@ -834,7 +1141,7 @@ class GamePlayPage(QPage):
                 width_height_pct=1.0,
                 children=(
                     QImage(
-                        src=f"assets/dice/{elem_die_map[ds.Element.ANY]}Die.png",
+                        src=f"assets/dice/{self.ELEM_NAME_MAP[ds.Element.ANY]}Die.png",
                         expand=True,
                     ),
                     QText(
@@ -863,16 +1170,7 @@ class GamePlayPage(QPage):
                             height_pct=1.0,
                             width_height_pct=1.0,
                             children=(
-                                QImage(
-                                    src=f"assets/dice/{elem_die_map[elem]}Die.png",
-                                    expand=True,
-                                ),
-                                QImage(
-                                    src=f"assets/elem_icons/{elem_die_map[elem]}.png",
-                                    width_pct=0.7,
-                                    height_pct=0.7,
-                                    align=QAlign(x_pct=0.5, y_pct=0.5),
-                                ),
+                                self._die(elem),
                             ),
                         ).root_component
                         for elem in die_list
@@ -902,7 +1200,7 @@ class GamePlayPage(QPage):
                 width_height_pct=1.0,
                 children=(
                     QImage(
-                        src=f"assets/dice/{elem_die_map[ds.Element.ANY]}Die.png",
+                        src=f"assets/dice/{self.ELEM_NAME_MAP[ds.Element.ANY]}Die.png",
                         expand=True,
                     ),
                     QText(
@@ -1011,3 +1309,20 @@ class GamePlayPage(QPage):
             ),
         )
         return item
+
+    def _die(self, elem: ds.Element) -> QItem:
+        return QItem(
+            expand=True,
+            children=(
+                QImage(
+                    src=f"assets/dice/{self.ELEM_NAME_MAP[elem]}Die.png",
+                    expand=True,
+                ),
+                QImage(
+                    src=f"assets/elem_icons/{self.ELEM_NAME_MAP[elem]}.png",
+                    width_pct=0.7,
+                    height_pct=0.7,
+                    align=QAlign(x_pct=0.5, y_pct=0.5),
+                ),
+            ),
+        )
