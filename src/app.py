@@ -17,6 +17,7 @@ from .routes import Route
 
 class DgisimApp():
     def __init__(self, page: ft.Page):
+        print("app version 1.0.11")
         self._context = AppContext(
             current_route=Route.GAME,
             orientation=Orientation.PORTRAIT,

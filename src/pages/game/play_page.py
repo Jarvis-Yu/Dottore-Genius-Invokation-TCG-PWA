@@ -311,7 +311,7 @@ class GamePlayPage(QPage):
                         ),
                         QImage(
                             expand=True,
-                            src=f"assets/char_cards/{char.name()}.png",
+                            src=f"assets/char-cards/{char.name()}.png",
                         ),
                         QItem(
                             expand=True,
@@ -852,7 +852,7 @@ class GamePlayPage(QPage):
                                 ),
                                 QImage(
                                     expand=True,
-                                    src=f"assets/char_cards/{char.name()}75.png",
+                                    src=f"assets/char-cards/{char.name()}75.png",
                                 ),
                             ),
                         ),
@@ -1027,7 +1027,7 @@ class GamePlayPage(QPage):
                         ),
                         elem_frame.add_flet_comp(
                             ft.Image(
-                                src=f"assets/elem_icons/{self.ELEM_NAME_MAP[elem]}.png",
+                                src=f"assets/elem-icons/{self.ELEM_NAME_MAP[elem]}.png",
                                 fit=ft.ImageFit.FILL,
                             )
                         )
@@ -1310,7 +1310,7 @@ class GamePlayPage(QPage):
                     expand=True,
                 ),
                 QImage(
-                    src=f"assets/elem_icons/{self.ELEM_NAME_MAP[elem]}.png",
+                    src=f"assets/elem-icons/{self.ELEM_NAME_MAP[elem]}.png",
                     width_pct=0.7,
                     height_pct=0.7,
                     align=QAlign(x_pct=0.5, y_pct=0.5),
