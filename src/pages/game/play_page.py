@@ -109,6 +109,27 @@ class GamePlayPage(QPage):
             self._act_gen.append(self._base_act_gen)
         self.render_prompt_action()
         self.render_state(self._curr_state)
+        if self._curr_state.game_end():
+            winner = self._curr_state.get_winner()
+            if winner is None:
+                text = "Draw"
+            elif winner is ds.Pid.P1:
+                text = "Win"
+            elif winner is ds.Pid.P2:
+                text = "Lose"
+            else:
+                raise Exception("Invalid winner")
+            self._game_layer.add_children((
+                QText(
+                    width_pct=0.7,
+                    height_pct=0.1,
+                    align=QAlign(x_pct=0.5, y_pct=0.5),
+                    colour=ft.colors.with_opacity(0.5, "#000000"),
+                    text=text,
+                    text_colour="#FFFFFF",
+                    size_rel_height=0.4,
+                )
+            ))
 
     def render_state(self, game_state: ds.GameState) -> None:
         self._top_right_col_menu.controls.clear()
