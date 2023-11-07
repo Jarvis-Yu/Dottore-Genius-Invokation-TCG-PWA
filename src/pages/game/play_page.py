@@ -110,12 +110,13 @@ class GamePlayPage(QPage):
         self._game_layer.clear()
 
         self._game_layer.add_children((
-            self._card_zone(0.005, 0.09, ds.Pid.P2, game_state),
-            self._support_summon_zone(0.105, 0.09, ds.Pid.P2, game_state),
-            self._char_zone(0.205, 0.22, ds.Pid.P2, game_state),
-            self._char_zone(0.435, 0.22, ds.Pid.P1, game_state),
-            self._support_summon_zone(0.665, 0.09, ds.Pid.P1, game_state),
-            self._card_zone(0.765, 0.22, ds.Pid.P1, game_state),
+            self._card_zone(0.005, 0.09, self._home_pid.other(), game_state),
+            self._support_summon_zone(0.105, 0.09, self._home_pid.other(), game_state),
+            self._char_zone(0.205, 0.22, self._home_pid.other(), game_state),
+            self._char_zone(0.435, 0.22, self._home_pid, game_state),
+            self._support_summon_zone(0.665, 0.09, self._home_pid, game_state),
+            self._card_zone(0.765, 0.22, self._home_pid, game_state),
+            self._end_round(self._home_pid, game_state),
         ))
 
     def render_prompt_action(self) -> None:
@@ -148,8 +149,16 @@ class GamePlayPage(QPage):
         else:
             assert len(self._act_gen) > 1
             choices = self._act_gen[-1].choices()
+            latest_action = self._act_gen[-1].action
+            print("matching", type(latest_action))
             if isinstance(choices, ds.AbstractDice):
+                print("abstract dice")
                 self._show_select_dice(list(self._act_gen))
+            elif isinstance(choices, tuple):
+                print("tuple")
+                if isinstance(latest_action, ds.SwapAction) and latest_action.char_id is None:
+                    print("swap")
+                    self._show_select_chars(list(self._act_gen))
 
     def _prompt_layer_bg(self) -> tuple[QItem, QItem]:
         reveal = QItem(
@@ -1342,7 +1351,7 @@ class GamePlayPage(QPage):
             game_state: ds.GameState,
     ) -> QItem:
         item = QItem(
-            height_pct=0.24,
+            height_pct=0.5,
             width_pct=1.0,
             anchor=QAnchor(left=0.0, bottom=1.0),
         )
@@ -1351,28 +1360,35 @@ class GamePlayPage(QPage):
         active_char = game_state.get_player(pid).get_characters().get_active_character()
         if active_char is None or active_char.defeated():
             return item
-        item.add_flet_comp((
-            skill_row := ft.Row(
-                expand=True,
-                alignment=ft.MainAxisAlignment.END,
-            )
+        item.add_children(QItem(
+            height_pct=0.48,
+            width_pct=1.0,
+            anchor=QAnchor(left=0.0, bottom=1.0),
+            flets=(
+                skill_row := ft.Row(
+                    expand=True,
+                    alignment=ft.MainAxisAlignment.END,
+                )
+            ),
         ))
+
+        # SKILL
         skills = active_char.skills()
-        act_gen: list[ds.ActionGenerator] | None = None
+        skill_act_gen: list[ds.ActionGenerator] | None = None
         if (
                 self._act_gen is not None
                 and len(self._act_gen) == 1
                 and ds.ActionType.CAST_SKILL in self._act_gen[0].choices()
         ):
-            act_gen = [
+            skill_act_gen = [
                 self._act_gen[0],
                 self._act_gen[0].choose(ds.ActionType.CAST_SKILL),
             ]
-            available_skills: tuple[ds.CharacterSkill] = act_gen[-1].choices()
+            available_skills: tuple[ds.CharacterSkill] = skill_act_gen[-1].choices()
         for skill in skills:
             body = QText(
                 ref_parent=item,
-                height_pct=1.0,
+                height_pct=0.48,
                 width_height_pct=1.0,
                 colour="#A87845",
                 border=ft.border.all(3, "#DBC9AF"),
@@ -1385,14 +1401,12 @@ class GamePlayPage(QPage):
 
             def choose_skill(skill: ds.CharacterSkill) -> None:
                 def f(_: ft.ControlEvent) -> None:
-                    next_act_gen = act_gen[-1].choose(skill)
+                    next_act_gen = skill_act_gen[-1].choose(skill)
                     self._act_gen.append(next_act_gen)
                     self._on_act_gen_updated()
-                    # self._show_select_dice(act_gen + [next_act_gen])
-                    # self._prompt_action_layer.root_component.update()
                 return f
 
-            if act_gen is None or skill not in available_skills:
+            if skill_act_gen is None or skill not in available_skills:
                 body.add_children(QItem(
                     expand=True,
                     border_radius=0x7fffffff,
@@ -1404,18 +1418,65 @@ class GamePlayPage(QPage):
                     mouse_cursor=ft.MouseCursor.CLICK,
                     expand=True,
                 ))
+
+        # SWAP
         item.add_children(
             swap_slot := QText(
-                height_pct=1.0,
+                height_pct=0.48,
                 width_height_pct=1.0,
-                anchor=QAnchor(right=1.0, bottom=-0.1),
+                anchor=QAnchor(right=1.0, top=0.0),
                 colour="#A87845",
                 border=ft.border.all(3, "#DBC9AF"),
                 border_radius=0x7fffffff,
                 text="⇌",
                 text_colour="#FFFFFF",
                 size_rel_height=0.5,
+                children=(
+                    swap_cover := QItem(
+                        expand=True,
+                    )
+                )
             )
+        )
+        swap_act_gen: list[ds.ActionGenerator] | None = None
+        if (
+                self._act_gen is not None
+                and len(self._act_gen) == 1
+                and ds.ActionType.SWAP_CHARACTER in self._act_gen[0].choices()
+        ):
+            swap_act_gen = [
+                self._act_gen[0],
+                self._act_gen[0].choose(ds.ActionType.SWAP_CHARACTER),
+            ]
+
+        def choose_swap(_: ft.ControlEvent) -> None:
+            self._act_gen = swap_act_gen
+            self._on_act_gen_updated()
+
+        if swap_act_gen is None:
+            swap_cover.add_children(QItem(
+                expand=True,
+                border_radius=0x7fffffff,
+                colour=ft.colors.with_opacity(0.5, "#000000"),
+            ))
+        else:
+            swap_cover.add_flet_comp(ft.GestureDetector(
+                on_tap=choose_swap,
+                mouse_cursor=ft.MouseCursor.CLICK,
+                expand=True,
+            ))
+        return item
+
+    def _end_round(
+            self,
+            pid: ds.Pid,
+            game_state: ds.GameState,
+    ) -> QItem:
+        item = QItem(
+            height_pct=0.1,
+            width_pct=0.1,
+            # align=QAlign(x_pct=0.5, y_pct=0.43),
+            # border=ft.border.all(1, "#DBC9AF"),
         )
         return item
 
