@@ -130,21 +130,51 @@ class GamePlayPage(QPage):
                     else:
                         self.submit_action(ds.EndRoundAction())
 
-    def _show_select_cards(self, pres: list[ds.ActionGenerator]) -> None:
-        choices = pres[-1].choices()
-        assert isinstance(choices, ds.Cards)
-        self._prompt_action_layer.clear()
-        self._prompt_action_layer.add_children((
-            background := QItem(
-                object_name="click_cover",
-                expand=True,
-                colour=ft.colors.with_opacity(0.5, "#000000"),
+    def _prompt_layer_bg(self) -> tuple[QItem, QItem]:
+        reveal = QItem(
+            expand=True,
+        )
+        background = QItem(
+            object_name="click_cover",
+            expand=True,
+            colour=ft.colors.with_opacity(0.5, "#000000"),
+        )
+
+        def show_content(_: ft.ControlEvent) -> None:
+            background.root_component.visible = True
+            background.root_component.update()
+
+        def hide_content(_: ft.ControlEvent) -> None:
+            background.root_component.visible = False
+            background.root_component.update()
+
+        reveal.add_flet_comp(ft.GestureDetector(
+            on_tap=show_content,
+            mouse_cursor=ft.MouseCursor.CLICK,
+        ))
+        background.add_flet_comp((
+            ft.GestureDetector(  # block press
+                on_tap=lambda _: None,
+                mouse_cursor=ft.MouseCursor.BASIC,
+            ),
+            ft.Container(
+                content=ft.IconButton(
+                    icon=ft.icons.REMOVE_RED_EYE_OUTLINED,
+                    style=self._context.settings.button_style,
+                    on_click=hide_content,
+                ),
+                alignment=ft.alignment.top_right,
             ),
         ))
-        background.add_flet_comp(ft.GestureDetector(
-            on_tap=lambda _: None,
-            mouse_cursor=ft.MouseCursor.BASIC,
-        ))  # block press
+        return reveal, background
+
+    def _show_select_cards(self, pres: list[ds.ActionGenerator]) -> None:
+        self._prompt_action_layer.clear()
+        reveal, background = self._prompt_layer_bg()
+        self._prompt_action_layer.add_children((reveal, background))
+
+        choices = pres[-1].choices()
+        assert isinstance(choices, ds.Cards)
         cards: list[type[ds.Card]] = []
         for card in choices:
             for _ in range(choices[card]):
@@ -240,6 +270,10 @@ class GamePlayPage(QPage):
 
     def _show_select_chars(self, pres: list[ds.ActionGenerator]) -> None:
         """ Character Selector for Starting Hand Phase """
+        self._prompt_action_layer.clear()
+        reveal, background = self._prompt_layer_bg()
+        self._prompt_action_layer.add_children((reveal, background))
+
         choices = pres[-1].choices()
         assert isinstance(choices, tuple) and isinstance(choices[0], int)
         chars = [
@@ -247,18 +281,7 @@ class GamePlayPage(QPage):
             for char in self._curr_state.get_player(self._home_pid).get_characters()
             if char.get_id() in choices
         ]
-        self._prompt_action_layer.clear()
-        self._prompt_action_layer.add_children((
-            background := QItem(
-                object_name="click_cover",
-                expand=True,
-                colour=ft.colors.with_opacity(0.5, "#000000"),
-            ),
-        ))
-        background.add_flet_comp(ft.GestureDetector(
-            on_tap=lambda _: None,
-            mouse_cursor=ft.MouseCursor.BASIC,
-        ))  # block press
+
         background.add_flet_comp(
             make_centre(
                 char_row := ft.Row(
@@ -330,7 +353,7 @@ class GamePlayPage(QPage):
                 ).root_component
             )
             char_map[char.get_id()] = selection_indicator
-        
+
         def check(_: ft.ControlEvent) -> None:
             last_act_gen = pres[-1]
             try:
@@ -348,7 +371,7 @@ class GamePlayPage(QPage):
             self._act_gen = pres
             self.rerender()
             self.root_component.update()
-        
+
         background.add_children((
             QItem(
                 width_pct=1.0,
@@ -371,29 +394,30 @@ class GamePlayPage(QPage):
         ))
 
     def _show_select_dice(self, pres: list[ds.ActionGenerator]) -> None:
-        choices = pres[-1].choices()
-        assert isinstance(choices, ds.ActualDice)
-
         self._prompt_action_layer.clear()
-        self._prompt_action_layer.add_children((
-            background := QItem(
-                object_name="click_cover",
+        reveal, background = self._prompt_layer_bg()
+        self._prompt_action_layer.add_children((reveal, background))
+        background.add_flet_comp((
+            prompt_row := ft.Row(
                 expand=True,
-                colour=ft.colors.with_opacity(0.5, "#000000"),
+                alignment=ft.MainAxisAlignment.CENTER,
             ),
-        ))
-        background.add_flet_comp(ft.GestureDetector(
-            on_tap=lambda _: None,
-            mouse_cursor=ft.MouseCursor.BASIC,
-        ))  # block press
-        background.add_flet_comp(
             make_centre(
                 dice_row := ft.Row(
                     expand=True,
                     wrap=True,
                 )
             ),
-        )
+        ))
+
+        choices = pres[-1].choices()
+        prompt: list[ds.Element] = []
+        if isinstance(choices, ds.AbstractDice):
+            for elem in choices:
+                for _ in range(choices[elem]):
+                    prompt.append(elem)
+            choices = self._curr_state.get_player(self._home_pid).get_dice()
+        assert isinstance(choices, ds.ActualDice)
 
         is_down: bool = False
         down_id: int = 0
@@ -460,6 +484,17 @@ class GamePlayPage(QPage):
                 flip_die(elem, id)
             return f
 
+        for elem in prompt:
+            prompt_row.controls.append(
+                QItem(
+                    ref_parent=background,
+                    height_pct=0.07,
+                    width_height_pct=1.0,
+                    children=(
+                        self._die(elem),
+                    ),
+                ).root_component
+            )
         for elem in choices.readonly_dice_ordered(self._curr_state.get_player(self._home_pid)):
             for i in range(choices[elem]):
                 dice_row.controls.append(
@@ -485,9 +520,6 @@ class GamePlayPage(QPage):
                 )
                 selection_frames[(elem, i)] = frame
 
-        def close(_: ft.ControlEvent) -> None:
-            self.submit_action(ds.EndRoundAction())
-
         def check(_: ft.ControlEvent) -> None:
             last_act_gen = pres[-1]
             try:
@@ -505,7 +537,7 @@ class GamePlayPage(QPage):
             self._act_gen = pres
             self.rerender()
             self.root_component.update()
-        
+
         background.add_children((
             QItem(
                 width_pct=1.0,
@@ -514,11 +546,6 @@ class GamePlayPage(QPage):
                 flets=(
                     ft.Row(
                         controls=[
-                            ft.IconButton(
-                                icon=ft.icons.CLOSE,
-                                on_click=close,
-                                style=self._context.settings.button_style,
-                            ),
                             ft.IconButton(
                                 icon=ft.icons.CHECK,
                                 on_click=check,
@@ -699,6 +726,7 @@ class GamePlayPage(QPage):
             children=(
                 self._cards(pid, game_state),
                 self._dice(pid, game_state),
+                self._skills(pid, game_state),
             ),
         )
         return item
@@ -1234,6 +1262,83 @@ class GamePlayPage(QPage):
                         src=f"assets/gif/active.gif",
                     ).root_component
                 )
+        return item
+
+    _SKILL_STR_MAP: dict[ds.CharacterSkill, str] = {
+        ds.CharacterSkill.SKILL1: "I",
+        ds.CharacterSkill.SKILL2: "II",
+        ds.CharacterSkill.SKILL3: "III",
+        ds.CharacterSkill.ELEMENTAL_BURST: "X",
+    }
+
+    def _skills(
+            self,
+            pid: ds.Pid,
+            game_state: ds.GameState,
+    ) -> QItem:
+        item = QItem(
+            height_pct=0.24,
+            width_pct=1.0,
+            anchor=QAnchor(left=0.0, bottom=1.0),
+            border=ft.border.all(1, "#DBC9AF"),
+        )
+        if pid is not self._home_pid:
+            return item
+        active_char = game_state.get_player(pid).get_characters().get_active_character()
+        if active_char is None or active_char.defeated():
+            return item
+        item.add_flet_comp((
+            skill_row := ft.Row(
+                expand=True,
+                alignment=ft.MainAxisAlignment.END,
+            )
+        ))
+        skills = active_char.skills()
+        act_gen: list[ds.ActionGenerator] | None = None
+        if (
+                self._act_gen is not None
+                and len(self._act_gen) == 1
+                and ds.ActionType.CAST_SKILL in self._act_gen[0].choices()
+        ):
+            act_gen = [
+                self._act_gen[0],
+                self._act_gen[0].choose(ds.ActionType.CAST_SKILL),
+            ]
+            available_skills: tuple[ds.CharacterSkill] = act_gen[-1].choices()
+        for skill in skills:
+            body = QText(
+                ref_parent=item,
+                height_pct=1.0,
+                width_height_pct=1.0,
+                colour="#A87845",
+                border=ft.border.all(3, "#DBC9AF"),
+                border_radius=0x7fffffff,
+                text=self._SKILL_STR_MAP[skill],
+                text_colour="#FFFFFF",
+                size_rel_height=0.5,
+            )
+            skill_row.controls.append(body.root_component)
+            if act_gen is None:
+                continue
+            def choose_skill(skill: ds.CharacterSkill) -> None:
+                def f(_: ft.ControlEvent) -> None:
+                    next_act_gen = act_gen[-1].choose(skill)
+                    self._show_select_dice(act_gen + [next_act_gen])
+                    self._prompt_action_layer.root_component.update()
+                return f
+
+            if skill in available_skills:
+                body.add_flet_comp(ft.GestureDetector(
+                    on_tap=choose_skill(skill),
+                    mouse_cursor=ft.MouseCursor.CLICK,
+                    expand=True,
+                ))
+            else:
+                body.add_children(QItem(
+                    expand=True,
+                    border_radius=0x7fffffff,
+                    colour=ft.colors.with_opacity(0.5, "#000000"),
+                ))
         return item
 
     def _cards(

@@ -15,10 +15,10 @@ class QText(QItem):
             size: float | int | None = None,
             **kwargs,
         ):
-            super().__init__(**kwargs)
-            self._text = ft.Text(value=text, size=size, color=text_colour)
             self._size_rel_height = size_rel_height
             self._size_rel_width = size_rel_width
+            self._text = ft.Text(value=text, size=size, color=text_colour)
+            super().__init__(**kwargs)
             self.add_flet_comp(ft.TransparentPointer(
                 content=ft.Container(
                     content=self._text,
