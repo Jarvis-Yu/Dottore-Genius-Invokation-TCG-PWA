@@ -1,5 +1,6 @@
+from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Callable, Literal
 
 from typing_extensions import Self
 
@@ -15,6 +16,7 @@ __all__ = [
     "GamePlaySettings",
     "Match",
     "GameData",
+    "GameDataListener",
 ]
 
 
@@ -148,6 +150,7 @@ class Match:
         except Exception as e:
             print("Agent cannot provide a valid action:", e)
             return
+        print(f"{pid} taking action: {action}")
         self._curr_match_node.action = action
         try:
             next_state = self._curr_match_node.stop_state.action_step(pid, action)
@@ -157,10 +160,14 @@ class Match:
             return
         self.new_node(next_state)
 
+
+GameDataGenre = Literal["latest", "history"]
+
 class GameData:
     def __init__(self) -> None:
         self.curr_game_mode: GamePlaySettings | None = None
         self.matches: dict[tuple, Match] = {}
+        self.genred_listeners: dict[GameDataGenre, list[GameDataListener]] = {}
 
     def init_game(self) -> None:
         """
@@ -183,6 +190,7 @@ class GameData:
         Execuate action and update the current match node.
         """
         assert self.require_action(pid)
+        print(f"{pid} taking action: {action}")
         self.curr_match.curr_node.action = action
         try:
             next_state = self.curr_match.curr_node.latest_state().action_step(pid, action)
@@ -199,161 +207,47 @@ class GameData:
         player_settings = self.curr_game_mode.setting_of(waiting_for)
         if player_settings.type == "E":
             self.curr_match.agent_action_step(waiting_for)
+            self.try_auto_step()
+        else:
+            self.notify_listeners("latest")
 
     def require_action(self, perspective: ds.Pid) -> bool:
         return self.curr_match.curr_node.latest_state().waiting_for() is perspective
 
     def curr_game_state(self, perspective: ds.Pid) -> ds.GameState:
         return self.curr_match.curr_node.latest_state().prespective_view(perspective)
-        return ds.GameState.from_default().factory().f_player1(
-            lambda p1: p1.factory().f_characters(
-                lambda cs: cs.factory().active_character_id(
-                    2
-                ).f_character(
-                    1,
-                    lambda c: c.factory().energy(
-                        2
-                    ).elemental_aura(
-                        ds.ElementalAura.from_default().add(ds.Element.HYDRO),
-                    ).f_equipments(
-                        lambda es: es.update_status(
-                            dsst.GamblersEarringsStatus()
-                        ).update_status(
-                            dsst.AmosBowStatus()
-                        )
-                    ).build()
-                ).f_character(
-                    2,
-                    lambda c: c.factory().elemental_aura(
-                        ds.ElementalAura.from_default().add(ds.Element.ELECTRO),
-                    ).f_equipments(
-                        lambda es: es.update_status(
-                            dsst.AmosBowStatus()
-                        ).update_status(
-                            dsst.ColdBloodedStrikeStatus()
-                        ).update_status(
-                            dsst.GamblersEarringsStatus()
-                        )
-                    ).f_character_statuses(
-                        lambda ss: ss.update_status(
-                            dsst.MushroomPizzaStatus()
-                        ).update_status(
-                            dsst.SatiatedStatus()
-                        ).update_status(
-                            dsst.LotusFlowerCrispStatus()
-                        )
-                    ).build()
-                ).f_character(
-                    3,
-                    lambda c: c.factory().hp(0).alive(False).build()
-                ).build()
-            ).f_summons(
-                lambda ss: ss.update_summon(
-                    dssm.UshiSummon()
-                ).update_summon(
-                    dssm.OzSummon()
-                ).update_summon(
-                    dssm.OceanicMimicFrogSummon()
-                ).update_summon(
-                    dssm.ChainsOfWardingThunderSummon()
-                )
-            ).f_supports(
-                lambda ss: ss.update_support(
-                    dssp.LibenSupport(sid=1)
-                ).update_support(
-                    dssp.LiyueHarborWharfSupport(sid=2)
-                ).update_support(
-                    dssp.ChangTheNinthSupport(sid=3)
-                ).update_support(
-                    dssp.PaimonSupport(sid=4)
-                )
-            ).f_dice(
-                lambda _: ds.ActualDice.from_random(16, excepted_elems=set((
-                    ds.Element.PYRO,
-                    ds.Element.HYDRO,
-                    ds.Element.ELECTRO,
-                )))
-            ).f_hand_cards(
-                lambda hcs: ds.Cards({
-                    dscd.ProphecyOfSubmersion: 1,
-                    dscd.IHaventLostYet: 2,
-                    dscd.Starsigns: 1,
-                    dscd.ElementalResonanceWovenThunder: 2,
-                    dscd.LiyueHarborWharf: 2,
-                    dscd.LeaveItToMe: 2,
-                })
-            ).build()
-        ).f_player2(
-            lambda p2: p2.factory().f_characters(
-                lambda cs: cs.factory().active_character_id(
-                    3
-                ).f_character(
-                    1,
-                    lambda c: c.factory().elemental_aura(
-                        ds.ElementalAura.from_default().add(ds.Element.PYRO),
-                    ).hp(
-                        0
-                    ).build()
-                ).f_character(
-                    2,
-                    lambda c: c.factory().energy(
-                        1
-                    ).elemental_aura(
-                        ds.ElementalAura.from_default().add(
-                            ds.Element.DENDRO
-                        ).add(
-                            ds.Element.CRYO
-                        ),
-                    ).build()
-                ).f_character(
-                    3,
-                    lambda c: c.factory().energy(
-                        1
-                    ).f_equipments(
-                        lambda es: es.update_status(
-                            dsst.GamblersEarringsStatus()
-                        ).update_status(
-                            dsst.ColdBloodedStrikeStatus()
-                        )
-                    ).build()
-                ).build()
-            ).f_summons(
-                lambda ss: ss.update_summon(
-                    dssm.AutumnWhirlwindSummon()
-                ).update_summon(
-                    dssm.BakeKurageSummon()
-                ).update_summon(
-                    dssm.CuileinAnbarSummon()
-                ).update_summon(
-                    dssm.SesshouSakuraSummon()
-                )
-            ).f_supports(
-                lambda ss: ss.update_support(
-                    dssp.NRESupport(sid=1)
-                ).update_support(
-                    dssp.KnightsOfFavoniusLibrarySupport(sid=2)
-                ).update_support(
-                    dssp.XudongSupport(sid=3)
-                ).update_support(
-                    dssp.ParametricTransformerSupport(sid=4)
-                )
-            ).f_dice(
-                lambda _: ds.ActualDice.from_random(8, excepted_elems=set((
-                    ds.Element.GEO,
-                    ds.Element.ANEMO,
-                    ds.Element.CRYO,
-                )))
-            ).f_hand_cards(
-                lambda hcs: ds.Cards({
-                    dscd.ElementalResonanceEnduringRock: 1,
-                    dscd.SumeruCity: 2,
-                    dscd.TheShrinesSacredShade: 1,
-                })
-            ).f_combat_statuses(
-                lambda ss: ss.update_status(
-                    dsst.RainbowBladeworkStatus()
-                ).update_status(
-                    dsst.RainSwordStatus()
-                )
-            ).build()
-        ).build().prespective_view(perspective)
+
+    def new_listener(self) -> GameDataListener:
+        listener = GameDataListener(self, "latest")
+        return listener
+
+    def listener_unsubscribe(self, listener: GameDataListener, genre: GameDataGenre) -> None:
+        self.genred_listeners[genre].remove(listener)
+
+    def listener_subscribe(self, listener: GameDataListener, genre: GameDataGenre) -> None:
+        if genre not in self.genred_listeners:
+            self.genred_listeners[genre] = []
+        self.genred_listeners[genre].append(listener)
+    
+    def notify_listeners(self, genre: GameDataGenre) -> None:
+        if genre not in self.genred_listeners:
+            return
+        for listener in self.genred_listeners[genre]:
+            listener.on_update()
+
+class GameDataListener:
+    def __init__(self, game_data: GameData, genre: GameDataGenre = "latest") -> None:
+        self._game_data = game_data
+        self.on_update: Callable[[], None] = lambda: None
+        self._genre = genre
+        game_data.listener_subscribe(self, genre)
+
+    def set_subscription(self, genre: GameDataGenre) -> None:
+        if self._genre == genre:
+            return
+        self._game_data.listener_unsubscribe(self, self._genre)
+        self._genre = genre
+        self._game_data.listener_subscribe(self, self._genre)
+
+    def unsubscribe(self) -> None:
+        self._game_data.listener_unsubscribe(self, self._genre)

@@ -67,22 +67,39 @@ class GamePlayPage(QPage):
         self._top_right_col_menu.controls.append(self._button_exit)
 
         self._home_pid = ds.Pid.P1
+        self._base_act_gen: ds.ActionGenerator | None = None
+        self._act_gen: list[ds.ActionGenerator] = []
+        self._listener = self._context.game_data.new_listener()
+        def on_update() -> None:
+            self.rerender()
+            self.root_component.update()
+        self._listener.on_update = on_update
         self.rerender()
 
     def _back_to_home(self, _: Any) -> None:
         self._context.current_route = Route.GAME
 
+    def _on_act_gen_updated(self) -> None:
+        if len(self._act_gen) == 0:
+            return
+        if self._act_gen[-1].filled():
+            self.submit_action(self._act_gen[-1].generate_action())
+        else:
+            self.render_prompt_action()
+            self._prompt_action_layer.root_component.update()
+
     def submit_action(self, action: ds.PlayerAction) -> None:
-        self._act_gen = []
+        self._base_act_gen = None
+        self._act_gen.clear()
         self._context.game_data.take_action(self._home_pid, action)
-        self.rerender()
-        self.root_component.update()
 
     def rerender(self, _: Any = None) -> None:
         self._curr_state = self._context.game_data.curr_game_state(self._home_pid)
-        self._act_gen: list[ds.ActionGenerator] | None = None
+        self._base_act_gen = None
+        self._act_gen.clear()
         if self._curr_state.waiting_for() is self._home_pid:
-            self._act_gen = [self._curr_state.action_generator(self._home_pid)]
+            self._base_act_gen = self._curr_state.action_generator(self._home_pid)
+            self._act_gen.append(self._base_act_gen)
         self.render_prompt_action()
         self.render_state(self._curr_state)
 
@@ -100,35 +117,38 @@ class GamePlayPage(QPage):
             self._card_zone(0.765, 0.22, ds.Pid.P1, game_state),
         ))
 
-        return
-
     def render_prompt_action(self) -> None:
         self._prompt_action_layer.clear()
-        if self._act_gen is None:
+        if self._base_act_gen is None:
             return
         if len(self._act_gen) == 1:
             mode = self._curr_state.get_mode()
             print("matching", type(self._curr_state.get_phase()))
             match type(self._curr_state.get_phase()):
                 case mode.card_select_phase:
-                    choices = self._act_gen[0].choices()
+                    choices = self._base_act_gen.choices()
                     if ds.ActionType.SELECT_CARDS in choices:
                         self._show_select_cards([
-                            self._act_gen[0],
-                            self._act_gen[0].choose(ds.ActionType.SELECT_CARDS),
+                            self._base_act_gen,
+                            self._base_act_gen.choose(ds.ActionType.SELECT_CARDS),
                         ])
                 case mode.starting_hand_select_phase:
-                    choices = self._act_gen[0].choices()
-                    self._show_select_chars(self._act_gen)
+                    choices = self._base_act_gen.choices()
+                    self._show_select_chars([self._base_act_gen])
                 case mode.roll_phase:
-                    choices = self._act_gen[0].choices()
+                    choices = self._base_act_gen.choices()
                     if ds.ActionType.SELECT_DICE in choices:
                         self._show_select_dice([
-                            self._act_gen[0],
-                            self._act_gen[0].choose(ds.ActionType.SELECT_DICE),
+                            self._base_act_gen,
+                            self._base_act_gen.choose(ds.ActionType.SELECT_DICE),
                         ])
                     else:
                         self.submit_action(ds.EndRoundAction())
+        else:
+            assert len(self._act_gen) > 1
+            choices = self._act_gen[-1].choices()
+            if isinstance(choices, ds.AbstractDice):
+                self._show_select_dice(self._act_gen)
 
     def _prompt_layer_bg(self) -> tuple[QItem, QItem]:
         reveal = QItem(
@@ -217,13 +237,9 @@ class GamePlayPage(QPage):
                 self._context.page.dialog = dlg
                 self._context.page.update()
                 return
-            if new_act_gen.filled():
-                self.submit_action(new_act_gen.generate_action())
-                return
             pres.append(new_act_gen)
             self._act_gen = pres
-            self.rerender()
-            self.root_component.update()
+            self._on_act_gen_updated()
 
         def close(_: ft.ControlEvent) -> None:
             assert len(self._act_gen) == 1
@@ -235,12 +251,8 @@ class GamePlayPage(QPage):
                 self._context.page.dialog = dlg
                 self._context.page.update()
                 return
-            if new_act_gen.filled():
-                self.submit_action(new_act_gen.generate_action())
-                return
-            self._act_gen.append(new_act_gen)
-            self.rerender()
-            self.root_component.update()
+            self._act_gen = [new_act_gen]
+            self._on_act_gen_updated()
 
         background.add_children((
             QItem(
@@ -295,9 +307,24 @@ class GamePlayPage(QPage):
 
         char_map: dict[int, QItem] = {}
 
+        def check(_: ft.ControlEvent) -> None:
+            last_act_gen = pres[-1]
+            try:
+                new_act_gen = last_act_gen.choose(selection)
+            except Exception:
+                dlg = ft.AlertDialog(title=ft.Text("Invalid Selection"))
+                dlg.open = True
+                self._context.page.dialog = dlg
+                self._context.page.update()
+                return
+            pres.append(new_act_gen)
+            self._act_gen = pres
+            self._on_act_gen_updated()
+
         def clicked(char_id: int) -> None:
             nonlocal selection
             if selection == char_id:
+                check(None)  # type: ignore
                 return
             for item in char_map.values():
                 item.clear()
@@ -353,24 +380,6 @@ class GamePlayPage(QPage):
                 ).root_component
             )
             char_map[char.get_id()] = selection_indicator
-
-        def check(_: ft.ControlEvent) -> None:
-            last_act_gen = pres[-1]
-            try:
-                new_act_gen = last_act_gen.choose(selection)
-            except Exception:
-                dlg = ft.AlertDialog(title=ft.Text("Invalid Selection"))
-                dlg.open = True
-                self._context.page.dialog = dlg
-                self._context.page.update()
-                return
-            if new_act_gen.filled():
-                self.submit_action(new_act_gen.generate_action())
-                return
-            pres.append(new_act_gen)
-            self._act_gen = pres
-            self.rerender()
-            self.root_component.update()
 
         background.add_children((
             QItem(
@@ -530,13 +539,9 @@ class GamePlayPage(QPage):
                 self._context.page.dialog = dlg
                 self._context.page.update()
                 return
-            if new_act_gen.filled():
-                self.submit_action(new_act_gen.generate_action())
-                return
             pres.append(new_act_gen)
             self._act_gen = pres
-            self.rerender()
-            self.root_component.update()
+            self._on_act_gen_updated()
 
         background.add_children((
             QItem(
@@ -1181,6 +1186,25 @@ class GamePlayPage(QPage):
                         src=f"assets/gif/active.gif",
                     ).root_component
                 )
+            elif game_state.get_player(self._home_pid).in_end_phase():
+                info_row.controls.append(
+                    QItem(
+                        ref_parent=card_info,
+                        height_pct=0.7,
+                        width_height_pct=1.0,
+                        border=ft.border.all(3, "#306ff6"),
+                        border_radius=0x7fffffff,
+                        children=(
+                            QItem(
+                                height=3,
+                                width_pct=1.0,
+                                align=QAlign(x_pct=0.5, y_pct=0.5),
+                                colour="#306ff6",
+                                rotate=ft.Rotate(angle=0.25 * pi, alignment=ft.alignment.center),
+                            ),
+                        ),
+                    ).root_component
+                )
             dice_row_item.add_flet_comp((
                 ft.Row(
                     controls=[
@@ -1262,6 +1286,25 @@ class GamePlayPage(QPage):
                         src=f"assets/gif/active.gif",
                     ).root_component
                 )
+            elif game_state.get_player(self._home_pid.other()).in_end_phase():
+                info_row.controls.append(
+                    QItem(
+                        ref_parent=card_info,
+                        height_pct=0.7,
+                        width_height_pct=1.0,
+                        border=ft.border.all(3, "#306ff6"),
+                        border_radius=0x7fffffff,
+                        children=(
+                            QItem(
+                                height=3,
+                                width_pct=1.0,
+                                align=QAlign(x_pct=0.5, y_pct=0.5),
+                                colour="#306ff6",
+                                rotate=ft.Rotate(angle=0.25 * pi, alignment=ft.alignment.center),
+                            ),
+                        ),
+                    ).root_component
+                )
         return item
 
     _SKILL_STR_MAP: dict[ds.CharacterSkill, str] = {
@@ -1280,7 +1323,6 @@ class GamePlayPage(QPage):
             height_pct=0.24,
             width_pct=1.0,
             anchor=QAnchor(left=0.0, bottom=1.0),
-            border=ft.border.all(1, "#DBC9AF"),
         )
         if pid is not self._home_pid:
             return item
@@ -1318,26 +1360,26 @@ class GamePlayPage(QPage):
                 size_rel_height=0.5,
             )
             skill_row.controls.append(body.root_component)
-            if act_gen is None:
-                continue
             def choose_skill(skill: ds.CharacterSkill) -> None:
                 def f(_: ft.ControlEvent) -> None:
                     next_act_gen = act_gen[-1].choose(skill)
-                    self._show_select_dice(act_gen + [next_act_gen])
-                    self._prompt_action_layer.root_component.update()
+                    self._act_gen.append(next_act_gen)
+                    self._on_act_gen_updated()
+                    # self._show_select_dice(act_gen + [next_act_gen])
+                    # self._prompt_action_layer.root_component.update()
                 return f
 
-            if skill in available_skills:
-                body.add_flet_comp(ft.GestureDetector(
-                    on_tap=choose_skill(skill),
-                    mouse_cursor=ft.MouseCursor.CLICK,
-                    expand=True,
-                ))
-            else:
+            if act_gen is None or skill not in available_skills:
                 body.add_children(QItem(
                     expand=True,
                     border_radius=0x7fffffff,
                     colour=ft.colors.with_opacity(0.5, "#000000"),
+                ))
+            else:
+                body.add_flet_comp(ft.GestureDetector(
+                    on_tap=choose_skill(skill),
+                    mouse_cursor=ft.MouseCursor.CLICK,
+                    expand=True,
                 ))
         return item
 
