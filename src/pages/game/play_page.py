@@ -70,6 +70,7 @@ class GamePlayPage(QPage):
         self._base_act_gen: ds.ActionGenerator | None = None
         self._act_gen: list[ds.ActionGenerator] = []
         self._listener = self._context.game_data.new_listener()
+
         def on_update() -> None:
             self.rerender()
             self.root_component.update()
@@ -148,7 +149,7 @@ class GamePlayPage(QPage):
             assert len(self._act_gen) > 1
             choices = self._act_gen[-1].choices()
             if isinstance(choices, ds.AbstractDice):
-                self._show_select_dice(self._act_gen)
+                self._show_select_dice(list(self._act_gen))
 
     def _prompt_layer_bg(self) -> tuple[QItem, QItem]:
         reveal = QItem(
@@ -242,16 +243,8 @@ class GamePlayPage(QPage):
             self._on_act_gen_updated()
 
         def close(_: ft.ControlEvent) -> None:
-            assert len(self._act_gen) == 1
-            try:
-                new_act_gen = self._act_gen[0].choose(ds.ActionType.END_ROUND)
-            except Exception:
-                dlg = ft.AlertDialog(title=ft.Text("Cannot Cancel"))
-                dlg.open = True
-                self._context.page.dialog = dlg
-                self._context.page.update()
-                return
-            self._act_gen = [new_act_gen]
+            assert len(self._act_gen) > 1
+            self._act_gen = self._act_gen[:-1]
             self._on_act_gen_updated()
 
         background.add_children((
@@ -260,25 +253,28 @@ class GamePlayPage(QPage):
                 height_pct=0.1,
                 anchor=QAnchor(left=0.0, bottom=1.0),
                 flets=(
-                    ft.Row(
-                        controls=[
-                            ft.IconButton(
-                                icon=ft.icons.CLOSE,
-                                on_click=close,
-                                style=self._context.settings.button_style,
-                            ),
-                            ft.IconButton(
-                                icon=ft.icons.CHECK,
-                                on_click=check,
-                                style=self._context.settings.button_style,
-                            ),
-                        ],
+                    control_row := ft.Row(
                         alignment=ft.MainAxisAlignment.SPACE_EVENLY,
                         expand=True,
                     ),
                 )
             ),
         ))
+        if len(self._act_gen) > 1:
+            control_row.controls.append(
+                ft.IconButton(
+                    icon=ft.icons.CLOSE,
+                    on_click=close,
+                    style=self._context.settings.button_style,
+                ),
+            )
+        control_row.controls.append(
+            ft.IconButton(
+                icon=ft.icons.CHECK,
+                on_click=check,
+                style=self._context.settings.button_style,
+            ),
+        )
 
     def _show_select_chars(self, pres: list[ds.ActionGenerator]) -> None:
         """ Character Selector for Starting Hand Phase """
@@ -319,6 +315,11 @@ class GamePlayPage(QPage):
                 return
             pres.append(new_act_gen)
             self._act_gen = pres
+            self._on_act_gen_updated()
+
+        def close(_: ft.ControlEvent) -> None:
+            assert len(self._act_gen) > 1
+            self._act_gen = self._act_gen[:-1]
             self._on_act_gen_updated()
 
         def clicked(char_id: int) -> None:
@@ -387,20 +388,28 @@ class GamePlayPage(QPage):
                 height_pct=0.1,
                 anchor=QAnchor(left=0.0, bottom=1.0),
                 flets=(
-                    ft.Row(
-                        controls=[
-                            ft.IconButton(
-                                icon=ft.icons.CHECK,
-                                on_click=check,
-                                style=self._context.settings.button_style,
-                            ),
-                        ],
+                    control_row := ft.Row(
                         alignment=ft.MainAxisAlignment.SPACE_EVENLY,
                         expand=True,
                     ),
                 )
             ),
         ))
+        if len(self._act_gen) > 1:
+            control_row.controls.append(
+                ft.IconButton(
+                    icon=ft.icons.CLOSE,
+                    on_click=close,
+                    style=self._context.settings.button_style,
+                ),
+            )
+        control_row.controls.append(
+            ft.IconButton(
+                icon=ft.icons.CHECK,
+                on_click=check,
+                style=self._context.settings.button_style,
+            ),
+        )
 
     def _show_select_dice(self, pres: list[ds.ActionGenerator]) -> None:
         self._prompt_action_layer.clear()
@@ -543,26 +552,39 @@ class GamePlayPage(QPage):
             self._act_gen = pres
             self._on_act_gen_updated()
 
+        def close(_: ft.ControlEvent) -> None:
+            assert len(self._act_gen) > 1
+            self._act_gen = self._act_gen[:-1]
+            self._on_act_gen_updated()
+
         background.add_children((
             QItem(
                 width_pct=1.0,
                 height_pct=0.1,
                 anchor=QAnchor(left=0.0, bottom=1.0),
                 flets=(
-                    ft.Row(
-                        controls=[
-                            ft.IconButton(
-                                icon=ft.icons.CHECK,
-                                on_click=check,
-                                style=self._context.settings.button_style,
-                            ),
-                        ],
+                    control_row := ft.Row(
                         alignment=ft.MainAxisAlignment.SPACE_EVENLY,
                         expand=True,
                     ),
                 )
             ),
         ))
+        if len(self._act_gen) > 1:
+            control_row.controls.append(
+                ft.IconButton(
+                    icon=ft.icons.CLOSE,
+                    on_click=close,
+                    style=self._context.settings.button_style,
+                ),
+            )
+        control_row.controls.append(
+            ft.IconButton(
+                icon=ft.icons.CHECK,
+                on_click=check,
+                style=self._context.settings.button_style,
+            ),
+        )
 
     def _selectable_card(
             self,
@@ -1360,6 +1382,7 @@ class GamePlayPage(QPage):
                 size_rel_height=0.5,
             )
             skill_row.controls.append(body.root_component)
+
             def choose_skill(skill: ds.CharacterSkill) -> None:
                 def f(_: ft.ControlEvent) -> None:
                     next_act_gen = act_gen[-1].choose(skill)
@@ -1381,6 +1404,19 @@ class GamePlayPage(QPage):
                     mouse_cursor=ft.MouseCursor.CLICK,
                     expand=True,
                 ))
+        item.add_children(
+            swap_slot := QText(
+                height_pct=1.0,
+                width_height_pct=1.0,
+                anchor=QAnchor(right=1.0, bottom=-0.1),
+                colour="#A87845",
+                border=ft.border.all(3, "#DBC9AF"),
+                border_radius=0x7fffffff,
+                text="⇌",
+                text_colour="#FFFFFF",
+                size_rel_height=0.5,
+            )
+        )
         return item
 
     def _cards(
