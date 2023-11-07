@@ -20,6 +20,9 @@ from ..base import QPage
 
 
 class GamePlayPage(QPage):
+    def pre_removal(self) -> None:
+        self._listener.unsubscribe()
+
     def post_init(self, context: AppContext) -> None:
         self._context = context
         context.page.bgcolor = context.settings.view_bg_colour
@@ -128,20 +131,18 @@ class GamePlayPage(QPage):
             return
         if len(self._act_gen) == 1:
             mode = self._curr_state.get_mode()
-            print("matching", type(self._curr_state.get_phase()))
+            # print("matching", type(self._curr_state.get_phase()))
+            choices = self._base_act_gen.choices()
             match type(self._curr_state.get_phase()):
                 case mode.card_select_phase:
-                    choices = self._base_act_gen.choices()
                     if ds.ActionType.SELECT_CARDS in choices:
                         self._show_select_cards([
                             self._base_act_gen,
                             self._base_act_gen.choose(ds.ActionType.SELECT_CARDS),
                         ])
                 case mode.starting_hand_select_phase:
-                    choices = self._base_act_gen.choices()
                     self._show_select_chars([self._base_act_gen])
                 case mode.roll_phase:
-                    choices = self._base_act_gen.choices()
                     if ds.ActionType.SELECT_DICE in choices:
                         self._show_select_dice([
                             self._base_act_gen,
@@ -149,18 +150,21 @@ class GamePlayPage(QPage):
                         ])
                     else:
                         self.submit_action(ds.EndRoundAction())
+                case _:
+                    if self._curr_state.death_swapping(self._home_pid):
+                        self._show_select_chars([
+                            self._base_act_gen,
+                            self._base_act_gen.choose(ds.ActionType.SWAP_CHARACTER),
+                        ])
         else:
             assert len(self._act_gen) > 1
             choices = self._act_gen[-1].choices()
             latest_action = self._act_gen[-1].action
-            print("matching", type(latest_action))
+            # print("matching", type(latest_action))
             if isinstance(choices, ds.AbstractDice):
-                print("abstract dice")
                 self._show_select_dice(list(self._act_gen))
             elif isinstance(choices, tuple):
-                print("tuple")
                 if isinstance(latest_action, ds.SwapAction) and latest_action.char_id is None:
-                    print("swap")
                     self._show_select_chars(list(self._act_gen))
 
     def _prompt_layer_bg(self) -> tuple[QItem, QItem]:
@@ -1532,6 +1536,7 @@ class GamePlayPage(QPage):
                 QItem(
                     expand=True,
                     colour=ft.colors.with_opacity(0.5, "#000000"),
+                    border_radius=0x7fffffff,
                 ),
             ))
             return item

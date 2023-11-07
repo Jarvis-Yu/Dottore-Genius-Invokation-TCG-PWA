@@ -9,3 +9,6 @@ class QPage(ABC, QItem):
     @abstractmethod
     def post_init(self, context: AppContext) -> None:
         pass
+
+    def pre_removal(self) -> None:
+        pass

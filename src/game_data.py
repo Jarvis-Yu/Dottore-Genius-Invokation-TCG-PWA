@@ -115,7 +115,7 @@ class Match:
     @property
     def curr_node(self) -> MatchNode:
         return self._curr_match_node
-
+    
     def new_node(self, init_state: ds.GameState) -> None:
         new_node = MatchNode(
             depth=self._curr_match_node.depth + 1,

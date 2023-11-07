@@ -36,6 +36,7 @@ class DgisimApp():
             Route.GAME_PLAY: GamePlayPage,
             Route.NOT_FOUND: NotFoundPage,
         }
+        self._loaded_qpage: QPage | None = None
         self._root_item = QItem.init_page(self._page)
         self._root_item.object_name = "root-item"
 
@@ -54,11 +55,14 @@ class DgisimApp():
         self._context.reference_size = Size(self._page.width, self._page.height)
 
     def navigate(self, route: Route) -> None:
+        if self._loaded_qpage is not None:
+            self._loaded_qpage.pre_removal()
         self._root_item.clear()
         self._root_item.add_children(page := self._get_page_at_route(route)(
             anchor=QAnchor(left=0.0, top=0.0, right=1.0, bottom=1.0),
         ))
         page.post_init(self._context)
+        self._loaded_qpage = page
         self._page.update()
 
     def _get_page_at_route(self, route: Route) -> type[QPage]:
