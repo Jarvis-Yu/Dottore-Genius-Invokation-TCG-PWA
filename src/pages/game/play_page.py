@@ -98,7 +98,10 @@ class GamePlayPage(QPage):
         self._curr_state = self._context.game_data.curr_game_state(self._home_pid)
         self._base_act_gen = None
         self._act_gen.clear()
-        if self._curr_state.waiting_for() is self._home_pid:
+        if (
+                self._curr_state.waiting_for() is self._home_pid
+                and not self._curr_state.game_end()
+        ):
             self._base_act_gen = self._curr_state.action_generator(self._home_pid)
             self._act_gen.append(self._base_act_gen)
         self.render_prompt_action()
@@ -1223,14 +1226,14 @@ class GamePlayPage(QPage):
                         ref_parent=card_info,
                         height_pct=0.7,
                         width_height_pct=1.0,
-                        border=ft.border.all(3, "#306ff6"),
+                        border=ft.border.all(3, "#ef8132"),
                         border_radius=0x7fffffff,
                         children=(
                             QItem(
                                 height=3,
                                 width_pct=1.0,
                                 align=QAlign(x_pct=0.5, y_pct=0.5),
-                                colour="#306ff6",
+                                colour="#ef8132",
                                 rotate=ft.Rotate(angle=0.25 * pi, alignment=ft.alignment.center),
                             ),
                         ),
@@ -1323,14 +1326,14 @@ class GamePlayPage(QPage):
                         ref_parent=card_info,
                         height_pct=0.7,
                         width_height_pct=1.0,
-                        border=ft.border.all(3, "#306ff6"),
+                        border=ft.border.all(3, "#ef8132"),
                         border_radius=0x7fffffff,
                         children=(
                             QItem(
                                 height=3,
                                 width_pct=1.0,
                                 align=QAlign(x_pct=0.5, y_pct=0.5),
-                                colour="#306ff6",
+                                colour="#ef8132",
                                 rotate=ft.Rotate(angle=0.25 * pi, alignment=ft.alignment.center),
                             ),
                         ),
@@ -1473,11 +1476,58 @@ class GamePlayPage(QPage):
             game_state: ds.GameState,
     ) -> QItem:
         item = QItem(
-            height_pct=0.1,
-            width_pct=0.1,
-            # align=QAlign(x_pct=0.5, y_pct=0.43),
-            # border=ft.border.all(1, "#DBC9AF"),
+            height_pct=0.04,
+            width_pct=1.0,
+            align=QAlign(x_pct=0.5, y_pct=0.43),
+            children=(
+            ),
         )
+        if not isinstance(game_state.get_phase(), game_state.get_mode().action_phase):
+            return item
+        item.add_children(
+            end_round_frame := QItem(
+                height_pct=1.0,
+                width_height_pct=1.0,
+                anchor=QAnchor(right=1.0, top=0.0),
+                colour="#A87845",
+                border=ft.border.all(3, "#DBC9AF"),
+                border_radius=0x7fffffff,
+                children=(
+                    QItem(
+                        height=3,
+                        width_pct=1.0,
+                        align=QAlign(x_pct=0.5, y_pct=0.5),
+                        colour="#DBC9AF",
+                        rotate=ft.Rotate(angle=0.25 * pi, alignment=ft.alignment.center),
+                    ),
+                ),
+            ),
+        )
+        act_gen = self._base_act_gen
+        if (
+                not game_state.get_player(pid).in_action_phase()
+                or act_gen is None
+                or len(self._act_gen) > 1
+                or ds.ActionType.END_ROUND not in act_gen.choices()
+        ):
+            end_round_frame.add_children((
+                QItem(
+                    expand=True,
+                    colour=ft.colors.with_opacity(0.5, "#000000"),
+                ),
+            ))
+            return item
+
+        def end_round(_: ft.ControlEvent) -> None:
+            next_act_gen = act_gen.choose(ds.ActionType.END_ROUND)
+            self._act_gen.append(next_act_gen)
+            self._on_act_gen_updated()
+
+        end_round_frame.add_flet_comp(ft.GestureDetector(
+            on_tap=end_round,
+            mouse_cursor=ft.MouseCursor.CLICK,
+            expand=True,
+        ))
         return item
 
     def _cards(
