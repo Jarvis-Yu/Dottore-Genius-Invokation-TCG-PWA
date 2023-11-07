@@ -442,11 +442,15 @@ class GamePlayPage(QPage):
 
         choices = pres[-1].choices()
         prompt: list[ds.Element] = []
+        requirement: ds.AbstractDice | None = None
+        sample_solution: dict[ds.Element, int] | None = None
         if isinstance(choices, ds.AbstractDice):
+            requirement = choices
             for elem in choices:
                 for _ in range(choices[elem]):
                     prompt.append(elem)
             choices = self._curr_state.get_player(self._home_pid).get_dice()
+            sample_solution = choices.basically_satisfy(requirement).to_dict()
         assert isinstance(choices, ds.ActualDice)
 
         is_down: bool = False
@@ -549,6 +553,20 @@ class GamePlayPage(QPage):
                     ).root_component
                 )
                 selection_frames[(elem, i)] = frame
+                if (
+                        sample_solution is not None
+                        and elem in sample_solution
+                        and sample_solution[elem] > 0
+                ):
+                    selection_frames[(elem, i)].add_children((
+                        QItem(
+                            expand=True,
+                            border=ft.border.all(5, "#00FF00"),
+                        ),
+                    ))
+                    select_elem(elem)
+                    selection_status[(elem, i)] = True
+                    sample_solution[elem] -= 1
 
         def check(_: ft.ControlEvent) -> None:
             last_act_gen = pres[-1]
@@ -1331,7 +1349,7 @@ class GamePlayPage(QPage):
                         children=(
                             QItem(
                                 height=3,
-                                width_pct=1.0,
+                                width_pct=0.5,
                                 align=QAlign(x_pct=0.5, y_pct=0.5),
                                 colour="#ef8132",
                                 rotate=ft.Rotate(angle=0.25 * pi, alignment=ft.alignment.center),
@@ -1495,7 +1513,7 @@ class GamePlayPage(QPage):
                 children=(
                     QItem(
                         height=3,
-                        width_pct=1.0,
+                        width_pct=0.5,
                         align=QAlign(x_pct=0.5, y_pct=0.5),
                         colour="#DBC9AF",
                         rotate=ft.Rotate(angle=0.25 * pi, alignment=ft.alignment.center),
