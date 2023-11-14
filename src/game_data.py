@@ -134,6 +134,8 @@ class Match:
         self._auto_complete_matchnode(new_node)
         self._curr_match_node = new_node
 
+    tmp = True
+
     def _auto_complete_matchnode(self, node: MatchNode) -> None:
         if node.is_state_complete():
             return
@@ -162,13 +164,13 @@ class Match:
         #     ).build()
 
         # from dgisim import summon as dssm
-        # if dssm.AutumnWhirlwindSummon not in node.stop_state.get_player2().get_summons() and self.tmp:
+        # if dssm.ShadowswordGallopingFrostSummon not in node.stop_state.get_player2().get_summons() and self.tmp:
         #     node.stop_state = node.stop_state.factory().f_player2(
         #         lambda p2: p2.factory().f_summons(
         #             lambda sms: sms.update_summon(
-        #                 dssm.AutumnWhirlwindSummon()
+        #                 dssm.ShadowswordGallopingFrostSummon()
         #             ).update_summon(
-        #                 dssm.BakeKurageSummon()
+        #                 dssm.ShadowswordLoneGaleSummon()
         #             ).update_summon(
         #                 dssm.BurningFlameSummon()
         #             ).update_summon(
