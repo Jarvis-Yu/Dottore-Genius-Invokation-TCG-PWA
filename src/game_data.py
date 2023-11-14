@@ -133,6 +133,14 @@ class Match:
         node.inter_states = gsm.get_history()[:-1]
         node.stop_state = gsm.get_history()[-1]
 
+        # from dgisim import card as dscd
+        # if dscd.KnightsOfFavoniusLibrary not in node.stop_state.get_player1().get_hand_cards():
+        #     node.stop_state = node.stop_state.factory().f_player1(
+        #         lambda p1: p1.factory().f_hand_cards(
+        #             lambda hcs: hcs.add(dscd.KnightsOfFavoniusLibrary)
+        #         ).build()
+        #     ).build()
+
     def agent(self, pid: ds.Pid) -> ds.PlayerAgent:
         if pid is ds.Pid.P1:
             return self._agent1

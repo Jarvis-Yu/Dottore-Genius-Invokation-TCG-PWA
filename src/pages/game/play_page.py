@@ -147,12 +147,12 @@ class GamePlayPage(QPage):
         ))
 
     def render_prompt_action(self) -> None:
+        print("rendering prompt action")
         self._prompt_action_layer.clear()
         if self._base_act_gen is None:
             return
         if len(self._act_gen) == 1:
             mode = self._curr_state.get_mode()
-            # print("matching", type(self._curr_state.get_phase()))
             choices = self._base_act_gen.choices()
             match type(self._curr_state.get_phase()):
                 case mode.card_select_phase:
@@ -171,6 +171,12 @@ class GamePlayPage(QPage):
                         ])
                     else:
                         self.submit_action(ds.EndRoundAction())
+                case mode.action_phase:
+                    if ds.ActionType.SELECT_DICE in choices:
+                        self._show_select_dice([
+                            self._base_act_gen,
+                            self._base_act_gen.choose(ds.ActionType.SELECT_DICE),
+                        ])
                 case _:
                     if self._curr_state.death_swapping(self._home_pid):
                         self._show_select_chars([
