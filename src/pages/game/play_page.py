@@ -23,6 +23,12 @@ class GamePlayPage(QPage):
     def pre_removal(self) -> None:
         self._listener.unsubscribe()
 
+    def _swap_view(self, _: ft.ControlEvent) -> None:
+        self._home_pid = self._home_pid.other()
+        self._prompt_action_layer.clear()
+        self.rerender()
+        self.root_component.update()
+
     def post_init(self, context: AppContext) -> None:
         self._context = context
         context.page.bgcolor = context.settings.view_bg_colour
@@ -67,7 +73,16 @@ class GamePlayPage(QPage):
             on_click=self._back_to_home,
             style=context.settings.button_style,
         )
-        self._top_right_col_menu.controls.append(self._button_exit)
+        self._button_settings = ft.IconButton(
+            icon=ft.icons.SETTINGS,
+            on_click=self._show_settings,
+            style=context.settings.button_style,
+        )
+        self._button_swap_view = ft.IconButton(
+            icon=ft.icons.WIFI_PROTECTED_SETUP,
+            on_click=self._swap_view,
+            style=self._context.settings.button_style,
+        )
 
         self._home_pid = ds.Pid.P1
         self._base_act_gen: ds.ActionGenerator | None = None
@@ -101,8 +116,16 @@ class GamePlayPage(QPage):
         self._curr_state = self._context.game_data.curr_game_state(self._home_pid)
         self._base_act_gen = None
         self._act_gen.clear()
+        game_mode = self._context.game_data.curr_game_mode
         if (
                 self._curr_state.waiting_for() is self._home_pid
+                and (
+                    self._home_pid is game_mode.primary_player
+                    or (
+                        game_mode.local
+                        and game_mode.setting_of(self._home_pid).player_type == "P"
+                    )
+                )
                 and not self._curr_state.game_end()
         ):
             self._base_act_gen = self._curr_state.action_generator(self._home_pid)
@@ -134,6 +157,15 @@ class GamePlayPage(QPage):
     def render_state(self, game_state: ds.GameState) -> None:
         self._top_right_col_menu.controls.clear()
         self._top_right_col_menu.controls.append(self._button_exit)
+        self._top_right_col_menu.controls.append(self._button_settings)
+        game_mode = self._context.game_data.curr_game_mode
+        assert game_mode is not None
+        if (
+                game_mode.local
+                and game_mode.primary_settings.player_type == "P"
+                and game_mode.oppo_settings.player_type == "P"
+        ):
+            self._top_right_col_menu.controls.append(self._button_swap_view)
         self._game_layer.clear()
 
         self._game_layer.add_children((
@@ -237,6 +269,60 @@ class GamePlayPage(QPage):
             ),
         ))
         return reveal, background
+
+    def _show_settings(self, _: ft.ControlEvent) -> None:
+        self._prompt_action_layer.clear()
+        reveal, background = self._prompt_layer_bg()
+        self._prompt_action_layer.add_children((reveal, background))
+
+        background.add_flet_comp(
+            make_centre(
+                buttons_col := ft.Column(
+                    expand=True,
+                    wrap=True,
+                )
+            )
+        )
+
+        def close(_: ft.ControlEvent) -> None:
+            self._prompt_action_layer.clear()
+            self._prompt_action_layer.root_component.update()
+
+        background.add_children((
+            QItem(
+                width_pct=1.0,
+                height_pct=0.1,
+                anchor=QAnchor(left=0.0, bottom=1.0),
+                flets=(
+                    control_row := ft.Row(
+                        alignment=ft.MainAxisAlignment.SPACE_EVENLY,
+                        expand=True,
+                    ),
+                )
+            ),
+        ))
+
+        control_row.controls.append(
+            ft.IconButton(
+                icon=ft.icons.CLOSE,
+                on_click=close,
+                style=self._context.settings.button_style,
+            ),
+        )
+        
+        assert self._context.game_data.curr_game_mode is not None
+        if self._context.game_data.curr_game_mode.local:
+
+            buttons_col.controls.append(
+                ft.TextButton(
+                    text="Swap View",
+                    icon=ft.icons.WIFI_PROTECTED_SETUP,
+                    on_click=self._swap_view,
+                    style=self._context.settings.button_style,
+                )
+            )
+
+        self._prompt_action_layer.root_component.update()
 
     def _show_select_cards(self, pres: list[ds.ActionGenerator]) -> None:
         self._prompt_action_layer.clear()

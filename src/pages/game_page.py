@@ -27,6 +27,12 @@ class GamePage(QPage):
                 on_click=self.goto_random_PVE,
                 style=context.settings.button_style,
             ),
+            ft.ElevatedButton(
+                text="Random Local PVP",
+                col=button_col,
+                on_click=self.goto_random_local_PVP,
+                style=context.settings.button_style,
+            ),
             # ft.ElevatedButton(
             #     text="Random EVE",
             #     col=button_col,
@@ -43,6 +49,11 @@ class GamePage(QPage):
 
     def goto_random_PVE(self, _: Any) -> None:
         self._context.game_mode = GamePlaySettings.from_random_PVE()
+        self._context.game_data.init_game()
+        self._context.current_route = Route.GAME_PLAY
+
+    def goto_random_local_PVP(self, _: Any) -> None:
+        self._context.game_mode = GamePlaySettings.from_random_local_PVP()
         self._context.game_data.init_game()
         self._context.current_route = Route.GAME_PLAY
 

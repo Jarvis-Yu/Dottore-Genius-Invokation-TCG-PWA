@@ -22,11 +22,11 @@ __all__ = [
 
 @dataclass(kw_only=True)
 class PlayerSettings:
-    type: Literal["P", "E"]
+    player_type: Literal["P", "E"]
     random_deck: bool = False
 
     def as_tuple(self) -> tuple[str, bool]:
-        return (self.type, self.random_deck)
+        return (self.player_type, self.random_deck)
 
 
 @dataclass(kw_only=True)
@@ -34,24 +34,33 @@ class GamePlaySettings:
     primary_player: ds.Pid
     primary_settings: PlayerSettings
     oppo_settings: PlayerSettings
-    # completely_random: bool = False
+    local: bool
 
     @classmethod
     def from_random_PVE(cls) -> None:
         return GamePlaySettings(
             primary_player=ds.Pid.P1,
-            primary_settings=PlayerSettings(type="P", random_deck=True),
-            oppo_settings=PlayerSettings(type="E", random_deck=True),
-            # completely_random=True,
+            primary_settings=PlayerSettings(player_type="P", random_deck=True),
+            oppo_settings=PlayerSettings(player_type="E", random_deck=True),
+            local=True,
+        )
+
+    @classmethod
+    def from_random_local_PVP(cls) -> None:
+        return GamePlaySettings(
+            primary_player=ds.Pid.P1,
+            primary_settings=PlayerSettings(player_type="P", random_deck=True),
+            oppo_settings=PlayerSettings(player_type="P", random_deck=True),
+            local=True,
         )
 
     @classmethod
     def from_random_EVE(cls) -> None:
         return GamePlaySettings(
             primary_player=ds.Pid.P1,
-            primary_settings=PlayerSettings(type="E", random_deck=True),
-            oppo_settings=PlayerSettings(type="E", random_deck=True),
-            # completely_random=True,
+            primary_settings=PlayerSettings(player_type="E", random_deck=True),
+            oppo_settings=PlayerSettings(player_type="E", random_deck=True),
+            local=True,
         )
 
     def setting_of(self, pid: ds.Pid) -> PlayerSettings:
@@ -241,7 +250,7 @@ class GameData:
         waiting_for = self.curr_match.curr_node.latest_state().waiting_for()
         assert waiting_for is not None
         player_settings = self.curr_game_mode.setting_of(waiting_for)
-        if player_settings.type == "E":
+        if player_settings.player_type == "E":
             self.curr_match.agent_action_step(waiting_for)
             self.try_auto_step()
         else:
