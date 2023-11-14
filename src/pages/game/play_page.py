@@ -147,7 +147,6 @@ class GamePlayPage(QPage):
         ))
 
     def render_prompt_action(self) -> None:
-        print("rendering prompt action")
         self._prompt_action_layer.clear()
         if self._base_act_gen is None:
             return
@@ -187,7 +186,6 @@ class GamePlayPage(QPage):
             assert len(self._act_gen) > 1
             choices = self._act_gen[-1].choices()
             latest_action = self._act_gen[-1].action
-            print("matching", type(latest_action))
             if isinstance(choices, ds.AbstractDice):
                 self._show_select_dice(list(self._act_gen))
             elif isinstance(choices, tuple):
@@ -1014,16 +1012,16 @@ class GamePlayPage(QPage):
                 name = char.name()
                 src_addr = f"assets/char-cards/{char.name()}.png"
             elif target.zone is ds.Zone.SUMMONS:
-                target = self._curr_state.get_target(target)
-                if not isinstance(target, ds.Summon):
+                summon_target = self._curr_state.get_target(target)
+                if not isinstance(summon_target, ds.Summon):
                     continue
-                name = target.__class__.__name__()
+                name = summon_target.__class__.__name__
                 src_addr = f"assets/summons/{name.removesuffix('Summon') + 'Card'}.png"
             elif target.zone is ds.Zone.SUPPORTS:
-                target = self._curr_state.get_target(target)
-                if not isinstance(target, ds.Support):
+                support_target = self._curr_state.get_target(target)
+                if not isinstance(support_target, ds.Support):
                     continue
-                name = target.__class__.__name__()
+                name = support_target.__class__.__name__
                 src_addr = f"assets/cards/{name.removesuffix('Support') + 'Card'}.png"
             else:
                 print(f"ERROR: {target.zone} not catched")
@@ -1523,7 +1521,7 @@ class GamePlayPage(QPage):
         equipments: ds.EquipmentStatuses = char.get_equipment_statuses()
         eq_map = {
             dsst.TalentEquipmentStatus: "Talent",
-            dsst.EquipmentStatus: "Weapon",
+            dsst.WeaponEquipmentStatus: "Weapon",
             dsst.ArtifactEquipmentStatus: "Artifact",
         }
         eqs: list[str] = []

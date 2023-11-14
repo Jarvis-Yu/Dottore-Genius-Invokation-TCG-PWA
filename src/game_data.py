@@ -134,12 +134,29 @@ class Match:
         node.stop_state = gsm.get_history()[-1]
 
         # from dgisim import card as dscd
-        # if dscd.KnightsOfFavoniusLibrary not in node.stop_state.get_player1().get_hand_cards():
+        # if dscd.GeneralsAncientHelm not in node.stop_state.get_player1().get_hand_cards():
         #     node.stop_state = node.stop_state.factory().f_player1(
         #         lambda p1: p1.factory().f_hand_cards(
-        #             lambda hcs: hcs.add(dscd.KnightsOfFavoniusLibrary)
+        #             lambda hcs: hcs.add(dscd.GeneralsAncientHelm)
         #         ).build()
         #     ).build()
+
+        # from dgisim import summon as dssm
+        # if dssm.AutumnWhirlwindSummon not in node.stop_state.get_player2().get_summons() and self.tmp:
+        #     node.stop_state = node.stop_state.factory().f_player2(
+        #         lambda p2: p2.factory().f_summons(
+        #             lambda sms: sms.update_summon(
+        #                 dssm.AutumnWhirlwindSummon()
+        #             ).update_summon(
+        #                 dssm.BakeKurageSummon()
+        #             ).update_summon(
+        #                 dssm.BurningFlameSummon()
+        #             ).update_summon(
+        #                 dssm.ReflectionSummon()
+        #             )
+        #         ).build()
+        #     ).build()
+        #     self.tmp = False
 
     def agent(self, pid: ds.Pid) -> ds.PlayerAgent:
         if pid is ds.Pid.P1:
