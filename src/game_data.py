@@ -142,6 +142,32 @@ class Match:
         if node.is_state_complete():
             return
         gsm = ds.GameStateMachine(node.inter_states[-1], self._agent1, self._agent2)
+        # # Fake Death Swap
+        # es = gsm.get_game_state().get_effect_stack()
+        # from dgisim import effect as dsef
+        # if any(
+        #         (
+        #             isinstance(e, dsef.CastSkillEffect)
+        #             and e.target.pid is ds.Pid.P2
+        #         )
+        #         for e in es._effects
+        # ):
+        #     gsm.step_until_holds(
+        #         lambda gs: (
+        #             (es := gs.get_effect_stack()).is_not_empty()
+        #             and isinstance(es.peek(), dsef.AliveMarkCheckerEffect)
+        #         )
+        #     )
+        #     gsm._history[-1] = gsm._history[-1].factory().f_effect_stack(
+        #         lambda es: es.push_one(dsef.ReferredDamageEffect(
+        #             source=ds.StaticTarget.from_support(ds.Pid.P2, 1),
+        #             target=ds.DynamicCharacterTarget.OPPO_ACTIVE,
+        #             element=ds.Element.PIERCING,
+        #             damage=100,
+        #             damage_type=ds.DamageType(status=True, no_boost=True),
+        #         ))
+        #     ).build()
+        #     gsm._game_state = gsm._history[-1]
         gsm.auto_step()
         node.inter_states = gsm.get_history()[:-1]
         node.stop_state = gsm.get_history()[-1]

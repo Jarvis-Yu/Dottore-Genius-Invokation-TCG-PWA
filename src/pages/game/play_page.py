@@ -195,6 +195,12 @@ class GamePlayPage(QPage):
         if len(self._act_gen) == 1:
             mode = self._curr_state.get_mode()
             choices = self._base_act_gen.choices()
+            if self._curr_state.death_swapping(self._home_pid):
+                self._show_select_chars([
+                    self._base_act_gen,
+                    self._base_act_gen.choose(ds.ActionType.SWAP_CHARACTER),
+                ])
+                return
             match type(self._curr_state.get_phase()):
                 case mode.card_select_phase:
                     if ds.ActionType.SELECT_CARDS in choices:
@@ -217,12 +223,6 @@ class GamePlayPage(QPage):
                         self._show_select_dice([
                             self._base_act_gen,
                             self._base_act_gen.choose(ds.ActionType.SELECT_DICE),
-                        ])
-                case _:
-                    if self._curr_state.death_swapping(self._home_pid):
-                        self._show_select_chars([
-                            self._base_act_gen,
-                            self._base_act_gen.choose(ds.ActionType.SWAP_CHARACTER),
                         ])
         else:
             assert len(self._act_gen) > 1
