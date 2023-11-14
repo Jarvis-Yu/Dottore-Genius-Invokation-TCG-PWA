@@ -223,14 +223,21 @@ class GamePlayPage(QPage):
             elif isinstance(choices, tuple):
                 if isinstance(latest_action, ds.SwapAction) and latest_action.char_id is None:
                     self._show_select_chars(list(self._act_gen))
-                elif isinstance(latest_action, ds.ElementalTuningAction) and latest_action.dice_elem is None:
-                    self._show_select_die(list(self._act_gen))
+                elif isinstance(latest_action, ds.ElementalTuningAction):
+                    if latest_action.card is None:
+                        self._show_select_card()
+                    elif latest_action.dice_elem is None:
+                        self._show_select_die(list(self._act_gen))
                 elif isinstance(choices[0], ds.StaticTarget):
                     self._show_select_static_target(list(self._act_gen))
+                elif issubclass(choices[0], ds.Card):
+                    self._show_select_card()
                 else:
-                    print(choices)
+                    print("choices:", choices)
+                    print("len actions:", len(self._act_gen))
+                    print("action type:", type(self._act_gen[-1].action))
             else:
-                print(choices)
+                print("choices:", choices)
 
     def _prompt_layer_bg(self) -> tuple[QItem, QItem]:
         reveal = QItem(
@@ -426,6 +433,8 @@ class GamePlayPage(QPage):
         control_row: ft.Row
 
         def close(_: ft.ControlEvent) -> None:
+            if len(self._act_gen) > 1:
+                self._act_gen = self._act_gen[:1]
             self._prompt_action_layer.clear()
             self._prompt_action_layer.root_component.update()
 
@@ -454,11 +463,13 @@ class GamePlayPage(QPage):
         tune_button = ft.IconButton(
             icon=ft.icons.RESTORE_FROM_TRASH,
             style=self._context.settings.button_style,
+            icon_color="#000000",
         )
 
         play_button = ft.IconButton(
             icon=ft.icons.CHECK,
             style=self._context.settings.button_style,
+            icon_color="#000000",
         )
 
         def click_card(card: type[ds.Card], selection_indicator: QItem) -> Callable:
@@ -758,8 +769,8 @@ class GamePlayPage(QPage):
         )
 
         choices: tuple[ds.Element] = pres[-1].choices()
-        assert isinstance(choices, tuple)
-        assert isinstance(choices[0], ds.Element)
+        assert isinstance(choices, tuple), choices
+        assert isinstance(choices[0], ds.Element), choices
 
         def elem_clicked(elem: ds.Element, selection_indicator: QItem) -> Callable:
             def f(_: ft.ControlEvent) -> None:
@@ -2174,6 +2185,7 @@ class GamePlayPage(QPage):
                             on_tap=click_card,
                             mouse_cursor=ft.MouseCursor.CLICK,
                             expand=True,
+                            visible=pid is self._home_pid,
                         ),
                     ),
                 )
