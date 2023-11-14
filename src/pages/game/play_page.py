@@ -136,9 +136,9 @@ class GamePlayPage(QPage):
             winner = self._curr_state.get_winner()
             if winner is None:
                 text = "Draw"
-            elif winner is ds.Pid.P1:
+            elif winner is self._home_pid:
                 text = "Win"
-            elif winner is ds.Pid.P2:
+            elif winner is self._home_pid.other():
                 text = "Lose"
             else:
                 raise Exception("Invalid winner")
@@ -319,12 +319,32 @@ class GamePlayPage(QPage):
         
         assert self._context.game_data.curr_game_mode is not None
         if self._context.game_data.curr_game_mode.local:
-
             buttons_col.controls.append(
                 ft.TextButton(
                     text="Swap View",
                     icon=ft.icons.WIFI_PROTECTED_SETUP,
                     on_click=self._swap_view,
+                    style=self._context.settings.button_style,
+                )
+            )
+
+        if (
+                self._home_pid is self._context.game_data.curr_game_mode.primary_player
+                or (
+                    self._context.game_data.curr_game_mode.local
+                    and self._context.game_data.curr_game_mode.setting_of(self._home_pid).player_type == "P"
+                )
+        ):
+            def surrender(_: ft.ControlEvent) -> None:
+                self._context.game_data.surrender(self._home_pid)
+                self.rerender()
+                self.root_component.update()
+
+            buttons_col.controls.append(
+                ft.TextButton(
+                    text="Surrender",
+                    icon=ft.icons.FLAG,
+                    on_click=surrender,
                     style=self._context.settings.button_style,
                 )
             )
@@ -855,11 +875,30 @@ class GamePlayPage(QPage):
             ),
         ))
 
+        selection: dict[ds.Element, int] = defaultdict(int)
+
+        def check(_: ft.ControlEvent) -> None:
+            last_act_gen = pres[-1]
+            try:
+                new_act_gen = last_act_gen.choose(ds.ActualDice(selection))
+            except Exception:
+                dlg = ft.AlertDialog(title=ft.Text("Invalid Selection"))
+                dlg.open = True
+                self._context.page.dialog = dlg
+                self._context.page.update()
+                return
+            pres.append(new_act_gen)
+            self._act_gen = pres
+            self._on_act_gen_updated()
+
         choices = pres[-1].choices()
         prompt: list[ds.Element] = []
         requirement: ds.AbstractDice | None = None
         sample_solution: dict[ds.Element, int] | None = None
         if isinstance(choices, ds.AbstractDice):
+            if choices.num_dice() == 0:
+                check(None)  # type: ignore
+                return
             requirement = choices
             for elem in choices:
                 for _ in range(choices[elem]):
@@ -890,8 +929,6 @@ class GamePlayPage(QPage):
                 expand=True,
             )
         )
-
-        selection: dict[ds.Element, int] = defaultdict(int)
 
         selection_timestamp: dict[tuple[ds.Element, int], int] = defaultdict(int)
         selection_status: dict[tuple[ds.Element, int], bool] = defaultdict(bool)
@@ -982,20 +1019,6 @@ class GamePlayPage(QPage):
                     select_elem(elem)
                     selection_status[(elem, i)] = True
                     sample_solution[elem] -= 1
-
-        def check(_: ft.ControlEvent) -> None:
-            last_act_gen = pres[-1]
-            try:
-                new_act_gen = last_act_gen.choose(ds.ActualDice(selection))
-            except Exception:
-                dlg = ft.AlertDialog(title=ft.Text("Invalid Selection"))
-                dlg.open = True
-                self._context.page.dialog = dlg
-                self._context.page.update()
-                return
-            pres.append(new_act_gen)
-            self._act_gen = pres
-            self._on_act_gen_updated()
 
         def close(_: ft.ControlEvent) -> None:
             assert len(self._act_gen) > 1

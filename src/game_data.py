@@ -226,9 +226,6 @@ class GameData:
                 or self.matches[curr_mode_tuple].curr_node.is_terminal()
         ):
             self.matches[curr_mode_tuple] = Match()
-        else:
-            # TODO: remove
-            self.matches[curr_mode_tuple] = Match()
         self.curr_match = self.matches[curr_mode_tuple]
         self.try_auto_step()
 
@@ -247,6 +244,23 @@ class GameData:
             return
         self.curr_match.new_node(next_state)
         self.try_auto_step()
+
+    def surrender(self, pid: ds.Pid) -> None:
+        self.curr_match.new_node(
+            self.curr_match.curr_node.latest_state().factory().f_phase(
+                lambda mode: mode.game_end_phase()
+            ).f_player(
+                pid,
+                lambda p: p.factory().f_characters(
+                    lambda cs: cs.factory().f_characters(
+                        lambda chs: tuple([
+                            char.factory().alive(False).build()
+                            for char in chs
+                        ])
+                    ).build()
+                ).build()
+            ).build()
+        )
 
     def try_auto_step(self) -> None:
         waiting_for = self.curr_match.curr_node.latest_state().waiting_for()
