@@ -189,7 +189,8 @@ class GamePlayPage(QPage):
                     self._show_select_chars(list(self._act_gen))
                 elif isinstance(latest_action, ds.ElementalTuningAction) and latest_action.dice_elem is None:
                     self._show_select_die(list(self._act_gen))
-                    ...
+                elif isinstance(choices[0], ds.StaticTarget):
+                    self._show_select_static_target(list(self._act_gen))
                 else:
                     print(choices)
             else:
@@ -376,6 +377,7 @@ class GamePlayPage(QPage):
                 nonlocal selected_card
 
                 selected_card = card
+                duplicate_click = last_selection is selection_indicator
                 if last_selection is not None:
                     last_selection.clear()
                 last_selection = selection_indicator
@@ -410,6 +412,9 @@ class GamePlayPage(QPage):
                 else:
                     play_button.icon_color = "#000000"
                     play_button.on_click = lambda _: None
+                if duplicate_click:
+                    play(None)  # type: ignore
+                    return
                 background.root_component.update()
             return f
 
@@ -924,6 +929,155 @@ class GamePlayPage(QPage):
                 style=self._context.settings.button_style,
             ),
         )
+
+    def _show_select_static_target(self, pres: list[ds.ActionGenerator]) -> None:
+        self._prompt_action_layer.clear()
+        reveal, background = self._prompt_layer_bg()
+        self._prompt_action_layer.add_children((reveal, background))
+        background.add_flet_comp((
+            make_centre(
+                target_row := ft.Row(
+                    expand=True,
+                    wrap=True,
+                )
+            ),
+        ))
+
+        choices = pres[-1].choices()
+        assert isinstance(choices, tuple) and isinstance(choices[0], ds.StaticTarget)
+
+        last_selection_indicator: QItem | None = None
+        selected_target: ds.StaticTarget | None = None
+
+        check_button = ft.IconButton(
+            icon=ft.icons.CHECK,
+            style=self._context.settings.button_style,
+            icon_color="#000000",
+        )
+
+        def close(_: ft.ControlEvent) -> None:
+            assert len(self._act_gen) > 1
+            self._act_gen = self._act_gen[:-1]
+            self._on_act_gen_updated()
+
+        def check(_: ft.ControlEvent) -> None:
+            last_act_gen = pres[-1]
+            try:
+                new_act_gen = last_act_gen.choose(selected_target)
+            except Exception:
+                dlg = ft.AlertDialog(title=ft.Text("Invalid Selection"))
+                dlg.open = True
+                self._context.page.dialog = dlg
+                self._context.page.update()
+                return
+            pres.append(new_act_gen)
+            self._act_gen = pres
+            self._on_act_gen_updated()
+
+        def on_clicked(target: ds.StaticTarget, selection_indicator: QItem) -> Callable[[ft.ControlEvent], None]:
+            def f(_: ft.ControlEvent) -> None:
+                nonlocal last_selection_indicator
+                nonlocal selected_target
+
+                selected_target = target
+                if last_selection_indicator is selection_indicator:
+                    check(None)  # type: ignore
+                    return
+                if last_selection_indicator is not None:
+                    last_selection_indicator.clear()
+                last_selection_indicator = selection_indicator
+                last_selection_indicator.add_children((
+                    QItem(
+                        expand=True,
+                        border=ft.border.all(5, "#00FF00"),
+                    ),
+                ))
+                if check_button.icon_color == "#000000":
+                    check_button.icon_color = "#FFFFFF"
+                    check_button.on_click = check
+                background.root_component.update()
+            return f
+
+        for target in choices:
+            name: str
+            src_addr: str
+            if target.zone is ds.Zone.CHARACTERS:
+                char = self._curr_state.get_character_target(target)
+                if char is None:
+                    continue
+                name = char.name()
+                src_addr = f"assets/char-cards/{char.name()}.png"
+            elif target.zone is ds.Zone.SUMMONS:
+                target = self._curr_state.get_target(target)
+                if not isinstance(target, ds.Summon):
+                    continue
+                name = target.__class__.__name__()
+                src_addr = f"assets/summons/{name.removesuffix('Summon') + 'Card'}.png"
+            elif target.zone is ds.Zone.SUPPORTS:
+                target = self._curr_state.get_target(target)
+                if not isinstance(target, ds.Support):
+                    continue
+                name = target.__class__.__name__()
+                src_addr = f"assets/cards/{name.removesuffix('Support') + 'Card'}.png"
+            else:
+                print(f"ERROR: {target.zone} not catched")
+                continue
+            target_row.controls.append(
+                QItem(
+                    ref_parent=background,
+                    height_pct=0.2,
+                    width_height_pct=7 / 12,
+                    children=(
+                        QText(
+                            width_pct=0.9,
+                            height_pct=0.9,
+                            align=QAlign(x_pct=0.5, y_pct=0.5),
+                            colour="#A87845",
+                            border=ft.border.all(1, "#DBC9AF"),
+                            text=name,
+                            text_colour="#000000",
+                            size_rel_height=0.1,
+                        ),
+                        QImage(
+                            expand=True,
+                            src=src_addr,
+                        ),
+                        selection_indicator := QItem(
+                            expand=True,
+                        ),
+                        click_pane := QItem(
+                            expand=True,
+                            flets=(
+                                ft.GestureDetector(
+                                    on_tap=on_clicked(target, selection_indicator),
+                                    mouse_cursor=ft.MouseCursor.CLICK,
+                                    expand=True,
+                                ),
+                            ),
+                        ),
+                    ),
+                ).root_component
+            )
+
+        background.add_children((
+            QItem(
+                width_pct=1.0,
+                height_pct=0.1,
+                anchor=QAnchor(left=0.0, bottom=1.0),
+                flets=(
+                    control_row := ft.Row(
+                        alignment=ft.MainAxisAlignment.SPACE_EVENLY,
+                        expand=True,
+                    ),
+                ),
+            ),
+        ))
+        control_row.controls.append(close_button := ft.IconButton(
+            icon=ft.icons.CLOSE,
+            on_click=close,
+            style=self._context.settings.button_style,
+        ))
+        control_row.controls.append(check_button)
 
     def _selectable_card(
             self,
