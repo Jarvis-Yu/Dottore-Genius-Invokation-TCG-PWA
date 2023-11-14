@@ -120,6 +120,7 @@ class Match:
             self._root_match_node = MatchNode(stop_state=initial_state)
 
         self._curr_match_node = self._root_match_node
+        self._focused_index = -1
 
     @property
     def curr_node(self) -> MatchNode:
@@ -132,6 +133,7 @@ class Match:
             inter_states=[init_state],
         )
         self._auto_complete_matchnode(new_node)
+        self._curr_match_node.children.append(new_node)
         self._curr_match_node = new_node
 
     tmp = True
@@ -207,6 +209,63 @@ class Match:
             return
         self.new_node(next_state)
 
+    def latest_state(self) -> ds.GameState:
+        return self._curr_match_node.latest_state()
+
+    def curr_state(self) -> ds.GameState:
+        if self._focused_index == -1:
+            return self.latest_state()
+        else:
+            return self._curr_match_node.inter_states[self._focused_index]
+
+    def is_at_latest(self) -> bool:
+        return (
+            len(self._curr_match_node.children) == 0
+            and self.curr_state() is self._curr_match_node.latest_state()
+        )
+
+    def action_back(self) -> None:
+        curr_node = self._curr_match_node
+        if curr_node.parent is None:
+            return
+        self._curr_match_node = curr_node.parent
+        self._focused_index = -1
+
+    def action_forward(self) -> None:
+        if len(self._curr_match_node.children) == 0:
+            self._focused_index = -1
+            return
+        self._curr_match_node = self._curr_match_node.children[0]
+        self._focused_index = -1
+
+    def step_back(self) -> None:
+        if self._focused_index == -1:
+            self._focused_index = len(self._curr_match_node.inter_states) - 1
+            if self._focused_index == -1:
+                self.action_back()
+        elif self._focused_index > 0:
+            self._focused_index -= 1
+        elif self._focused_index == 0:
+            if self._curr_match_node.parent is not None:
+                self.action_back()
+                self._focused_index = -1
+
+    def step_forward(self) -> None:
+        if self._focused_index == -1:
+            if len(self._curr_match_node.children) != 0:
+                self.action_forward()
+                if self._curr_match_node.inter_states:
+                    self._focused_index = 0
+        elif self._focused_index < len(self._curr_match_node.inter_states) - 1:
+            self._focused_index += 1
+        elif self._focused_index == len(self._curr_match_node.inter_states) - 1:
+            self._focused_index = -1
+
+    def curr_state_index(self) -> tuple[int, int]:
+        return (
+            self._curr_match_node.depth,
+            self._focused_index if self._focused_index != -1 else len(self._curr_match_node.inter_states),
+        )
 
 GameDataGenre = Literal["latest", "history"]
 
@@ -227,13 +286,13 @@ class GameData:
         ):
             self.matches[curr_mode_tuple] = Match()
         self.curr_match = self.matches[curr_mode_tuple]
-        self.try_auto_step()
+        self._try_auto_step()
 
     def take_action(self, pid: ds.Pid, action: ds.PlayerAction) -> None:
         """
         Execuate action and update the current match node.
         """
-        assert self.require_action(pid)
+        assert self._require_action(pid)
         print(f"{pid} taking action: {action}")
         self.curr_match.curr_node.action = action
         try:
@@ -243,7 +302,7 @@ class GameData:
             print(e)
             return
         self.curr_match.new_node(next_state)
-        self.try_auto_step()
+        self._try_auto_step()
 
     def surrender(self, pid: ds.Pid) -> None:
         self.curr_match.new_node(
@@ -262,21 +321,47 @@ class GameData:
             ).build()
         )
 
-    def try_auto_step(self) -> None:
+    def _try_auto_step(self) -> None:
         waiting_for = self.curr_match.curr_node.latest_state().waiting_for()
         assert waiting_for is not None
         player_settings = self.curr_game_mode.setting_of(waiting_for)
         if player_settings.player_type == "E":
             self.curr_match.agent_action_step(waiting_for)
-            self.try_auto_step()
+            self._try_auto_step()
         else:
             self.notify_listeners("latest")
 
-    def require_action(self, perspective: ds.Pid) -> bool:
-        return self.curr_match.curr_node.latest_state().waiting_for() is perspective
+    def _require_action(self, perspective: ds.Pid) -> bool:
+        return self.curr_match.curr_state().waiting_for() is perspective
 
     def curr_game_state(self, perspective: ds.Pid) -> ds.GameState:
-        return self.curr_match.curr_node.latest_state().prespective_view(perspective)
+        return self.curr_match.curr_state().prespective_view(perspective)
+
+    def action_taken_at_curr(self, perspective: ds.Pid) -> ds.PlayerAction | None:
+        if (
+                self.curr_match.curr_node.action is None
+                or self.curr_match.curr_state() is not self.curr_match.latest_state()
+        ):
+            return None
+        return self.curr_match.curr_node.action  # TODO: perspective
+
+    def is_at_latest(self) -> bool:
+        return self.curr_match.is_at_latest()
+
+    def action_back(self) -> None:
+        self.curr_match.action_back()
+
+    def action_forward(self) -> None:
+        self.curr_match.action_forward()
+
+    def step_back(self) -> None:
+        self.curr_match.step_back()
+
+    def step_forward(self) -> None:
+        self.curr_match.step_forward()
+
+    def curr_state_index(self) -> tuple[int, int]:
+        return self.curr_match.curr_state_index()
 
     def new_listener(self) -> GameDataListener:
         listener = GameDataListener(self, "latest")

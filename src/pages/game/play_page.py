@@ -78,6 +78,11 @@ class GamePlayPage(QPage):
             on_click=self._show_settings,
             style=context.settings.button_style,
         )
+        self._button_history = ft.IconButton(
+            icon=ft.icons.ACCESS_TIME,
+            on_click=self._show_history,
+            style=context.settings.button_style,
+        )
         self._button_swap_view = ft.IconButton(
             icon=ft.icons.WIFI_PROTECTED_SETUP,
             on_click=self._swap_view,
@@ -88,6 +93,7 @@ class GamePlayPage(QPage):
         self._base_act_gen: ds.ActionGenerator | None = None
         self._act_gen: list[ds.ActionGenerator] = []
         self._listener = self._context.game_data.new_listener()
+        self._in_history = False
 
         def on_update() -> None:
             self.rerender()
@@ -154,10 +160,14 @@ class GamePlayPage(QPage):
                 )
             ))
 
+        if self._in_history:
+            self._show_history(None)
+
     def render_state(self, game_state: ds.GameState) -> None:
         self._top_right_col_menu.controls.clear()
         self._top_right_col_menu.controls.append(self._button_exit)
         self._top_right_col_menu.controls.append(self._button_settings)
+        self._top_right_col_menu.controls.append(self._button_history)
         game_mode = self._context.game_data.curr_game_mode
         assert game_mode is not None
         if (
@@ -180,7 +190,7 @@ class GamePlayPage(QPage):
 
     def render_prompt_action(self) -> None:
         self._prompt_action_layer.clear()
-        if self._base_act_gen is None:
+        if self._base_act_gen is None or self._in_history:
             return
         if len(self._act_gen) == 1:
             mode = self._curr_state.get_mode()
@@ -351,6 +361,117 @@ class GamePlayPage(QPage):
 
         self._prompt_action_layer.root_component.update()
 
+    def _show_history(self, _: ft.ControlEvent) -> None:
+        self._in_history = True
+        self._prompt_action_layer.clear()
+        reveal, background = self._prompt_layer_bg()
+        self._prompt_action_layer.add_children((reveal, background))
+
+        def close(_: ft.ControlEvent) -> None:
+            self._prompt_action_layer.clear()
+            self._prompt_action_layer.root_component.update()
+            if self._context.game_data.is_at_latest():
+                print("======== is at latest")
+                self._in_history = False
+                self.rerender()
+                self.root_component.update()
+
+        background.add_flet_comp(
+            ft.GestureDetector(
+                on_tap=close,
+                mouse_cursor=ft.MouseCursor.BASIC,
+                expand=True,
+            )
+        )
+
+        state_index = self._context.game_data.curr_state_index()
+        contents = [
+            f"State: {state_index[0]} | {state_index[1]}",
+            f"Round: {self._curr_state.get_round()}",
+            f"Phase: {self._curr_state.get_phase().__class__.__name__}",
+        ]
+        action_taken = self._context.game_data.action_taken_at_curr(self._home_pid)
+        if action_taken is not None:
+            contents.append(f"Action from: {self._curr_state.waiting_for().name}")
+            contents.append(f"Action: {action_taken}")
+        text_content = '\n'.join(contents)
+
+        background.add_children(
+            QText(
+                width_pct=0.8,
+                height_pct=0.8,
+                align=QAlign(x_pct=0.5, y_pct=0.5),
+                text=text_content,
+                text_colour="#FFFFFF",
+                size_rel_height=0.03,
+            )
+        )
+
+        background.add_children((
+            QItem(
+                width_pct=1.0,
+                height_pct=0.1,
+                anchor=QAnchor(left=0.0, bottom=1.0),
+                flets=(
+                    control_row := ft.Row(
+                        alignment=ft.MainAxisAlignment.SPACE_EVENLY,
+                        expand=True,
+                    ),
+                )
+            ),
+        ))
+
+        def action_back(_: ft.ControlEvent) -> None:
+            self._context.game_data.action_back()
+            self.rerender()
+            self.root_component.update()
+
+        def action_forward(_: ft.ControlEvent) -> None:
+            self._context.game_data.action_forward()
+            self.rerender()
+            self.root_component.update()
+
+        def step_back(_: ft.ControlEvent) -> None:
+            self._context.game_data.step_back()
+            self.rerender()
+            self.root_component.update()
+
+        def step_forward(_: ft.ControlEvent) -> None:
+            self._context.game_data.step_forward()
+            self.rerender()
+            self.root_component.update()
+
+        control_row.controls.append(
+            ft.IconButton(
+                icon=ft.icons.KEYBOARD_DOUBLE_ARROW_LEFT,
+                on_click=action_back,
+                style=self._context.settings.button_style,
+            )
+        )
+        control_row.controls.append(
+            ft.IconButton(
+                icon=ft.icons.KEYBOARD_ARROW_LEFT,
+                on_click=step_back,
+                style=self._context.settings.button_style,
+            )
+        )
+        control_row.controls.append(
+            ft.IconButton(
+                icon=ft.icons.KEYBOARD_ARROW_RIGHT,
+                on_click=step_forward,
+                style=self._context.settings.button_style,
+            )
+        )
+        control_row.controls.append(
+            ft.IconButton(
+                icon=ft.icons.KEYBOARD_DOUBLE_ARROW_RIGHT,
+                on_click=action_forward,
+                style=self._context.settings.button_style,
+            )
+        )
+
+        self.root_component.update()
+
     def _show_select_cards(self, pres: list[ds.ActionGenerator]) -> None:
         self._prompt_action_layer.clear()
         reveal, background = self._prompt_layer_bg()
@@ -516,8 +637,8 @@ class GamePlayPage(QPage):
                     background.root_component.update()
                     return
                 if (
-                    ds.ActionType.ELEMENTAL_TUNING in self._base_act_gen.choices()
-                    and card in self._base_act_gen.choose(ds.ActionType.ELEMENTAL_TUNING).choices()
+                        ds.ActionType.ELEMENTAL_TUNING in self._base_act_gen.choices()
+                        and card in self._base_act_gen.choose(ds.ActionType.ELEMENTAL_TUNING).choices()
                 ):
                     tune_button.icon_color = "#FFFFFF"
                     tune_button.on_click = tune
@@ -525,17 +646,17 @@ class GamePlayPage(QPage):
                     tune_button.icon_color = "#000000"
                     tune_button.on_click = lambda _: None
                 if (
-                    ds.ActionType.PLAY_CARD in self._base_act_gen.choices()
-                    and card in self._base_act_gen.choose(ds.ActionType.PLAY_CARD).choices()
+                        ds.ActionType.PLAY_CARD in self._base_act_gen.choices()
+                        and card in self._base_act_gen.choose(ds.ActionType.PLAY_CARD).choices()
                 ):
                     play_button.icon_color = "#FFFFFF"
                     play_button.on_click = play
+                    if duplicate_click:
+                        play(None)  # type: ignore
+                        return
                 else:
                     play_button.icon_color = "#000000"
                     play_button.on_click = lambda _: None
-                if duplicate_click:
-                    play(None)  # type: ignore
-                    return
                 background.root_component.update()
             return f
 
@@ -572,6 +693,7 @@ class GamePlayPage(QPage):
                                             on_tap=click_card(card, selection_indicator),
                                             mouse_cursor=ft.MouseCursor.CLICK,
                                             expand=True,
+                                            visible=not self._in_history,
                                         ),
                                     ),
                                 ),
@@ -2025,6 +2147,7 @@ class GamePlayPage(QPage):
                     on_tap=choose_skill(skill),
                     mouse_cursor=ft.MouseCursor.CLICK,
                     expand=True,
+                    visible=not self._in_history,
                 ))
 
         # SWAP
@@ -2072,6 +2195,7 @@ class GamePlayPage(QPage):
                 on_tap=choose_swap,
                 mouse_cursor=ft.MouseCursor.CLICK,
                 expand=True,
+                visible=not self._in_history,
             ))
         return item
 
@@ -2133,6 +2257,7 @@ class GamePlayPage(QPage):
             on_tap=end_round,
             mouse_cursor=ft.MouseCursor.CLICK,
             expand=True,
+            visible=not self._in_history,
         ))
         return item
 
