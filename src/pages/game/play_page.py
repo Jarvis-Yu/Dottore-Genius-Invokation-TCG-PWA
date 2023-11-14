@@ -502,6 +502,12 @@ class GamePlayPage(QPage):
 
         char_map: dict[int, QItem] = {}
 
+        click_button = ft.IconButton(
+            icon=ft.icons.CHECK,
+            style=self._context.settings.button_style,
+            icon_color="#000000",
+        )
+
         def check(_: ft.ControlEvent) -> None:
             last_act_gen = pres[-1]
             try:
@@ -529,6 +535,9 @@ class GamePlayPage(QPage):
             for item in char_map.values():
                 item.clear()
             selection = char_id
+            if click_button.icon_color == "#000000":
+                click_button.icon_color = "#FFFFFF"
+                click_button.on_click = check
             char_map[char_id].add_children(
                 QItem(
                     border=ft.border.all(5, "#00FF00"),
@@ -603,11 +612,7 @@ class GamePlayPage(QPage):
                 ),
             )
         control_row.controls.append(
-            ft.IconButton(
-                icon=ft.icons.CHECK,
-                on_click=check,
-                style=self._context.settings.button_style,
-            ),
+            click_button
         )
 
     def _show_select_die(self, pres: list[ds.ActionGenerator]) -> None:
@@ -668,7 +673,8 @@ class GamePlayPage(QPage):
 
                 selected_die = elem
                 if last_selection_indicator is selection_indicator:
-                    check(None)
+                    check(None)  # type: ignore
+                    return
                 if last_selection_indicator is not None:
                     last_selection_indicator.clear()
                 last_selection_indicator = selection_indicator
