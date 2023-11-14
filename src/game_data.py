@@ -133,7 +133,18 @@ class Match:
         node.inter_states = gsm.get_history()[:-1]
         node.stop_state = gsm.get_history()[-1]
 
-        # from dgisim import card as dscd
+        # from dgisim import char as dscr
+        # if dscr.Dehya not in node.stop_state.get_player1().get_characters():
+        #     node.stop_state = node.stop_state.factory().f_player1(
+        #         lambda p1: p1.factory().f_characters(
+        #             lambda chs: chs.factory().f_character(
+        #                 2,
+        #                 lambda: dscr.Dehya.from_default(2)
+        #             ).build()
+        #         ).build()
+        #     ).build()
+
+        # from dgisim import cd as dscd
         # if dscd.GeneralsAncientHelm not in node.stop_state.get_player1().get_hand_cards():
         #     node.stop_state = node.stop_state.factory().f_player1(
         #         lambda p1: p1.factory().f_hand_cards(
