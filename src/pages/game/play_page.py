@@ -209,7 +209,7 @@ class GamePlayPage(QPage):
         if self._base_act_gen is None or self._in_history:
             return
         if len(self._act_gen) == 1:
-            mode = self._curr_state.get_mode()
+            mode = self._curr_state.mode
             choices = self._base_act_gen.choices()
             if self._curr_state.death_swapping(self._home_pid):
                 self._show_select_chars([
@@ -217,7 +217,7 @@ class GamePlayPage(QPage):
                     self._base_act_gen.choose(ds.ActionType.SWAP_CHARACTER),
                 ])
                 return
-            match type(self._curr_state.get_phase()):
+            match type(self._curr_state.phase):
                 case mode.card_select_phase:
                     if ds.ActionType.SELECT_CARDS in choices:
                         self._show_select_cards([
@@ -239,6 +239,11 @@ class GamePlayPage(QPage):
                         self._show_select_dice([
                             self._base_act_gen,
                             self._base_act_gen.choose(ds.ActionType.SELECT_DICE),
+                        ])
+                    elif ds.ActionType.SELECT_CARDS in choices:
+                        self._show_select_cards([
+                            self._base_act_gen,
+                            self._base_act_gen.choose(ds.ActionType.SELECT_CARDS),
                         ])
         else:
             assert len(self._act_gen) > 1
@@ -403,8 +408,8 @@ class GamePlayPage(QPage):
         state_index = self._context.game_data.curr_state_index()
         contents = [
             f"State: {state_index[0]} | {state_index[1]}",
-            f"Round: {self._curr_state.get_round()}",
-            f"Phase: {self._curr_state.get_phase().__class__.__name__}",
+            f"Round: {self._curr_state.round}",
+            f"Phase: {self._curr_state.phase.__class__.__name__}",
         ]
         action_taken = self._context.game_data.action_taken_at_curr(self._home_pid)
         if action_taken is not None:
@@ -581,7 +586,7 @@ class GamePlayPage(QPage):
         reveal, background = self._prompt_layer_bg()
         self._prompt_action_layer.add_children((reveal, background))
 
-        cards = self._curr_state.get_player(self._home_pid).get_hand_cards()
+        cards = self._curr_state.get_player(self._home_pid).hand_cards
         cards = list(Counter(cards.to_dict()).elements())
 
         last_selection: QItem | None = None
@@ -749,8 +754,8 @@ class GamePlayPage(QPage):
         assert isinstance(choices, tuple) and isinstance(choices[0], int)
         chars = [
             char
-            for char in self._curr_state.get_player(self._home_pid).get_characters()
-            if char.get_id() in choices
+            for char in self._curr_state.get_player(self._home_pid).characters
+            if char.id in choices
         ]
 
         background.add_flet_comp(
@@ -840,7 +845,7 @@ class GamePlayPage(QPage):
                             expand=True,
                             flets=(
                                 ft.GestureDetector(
-                                    on_tap=local_clicked(char.get_id()),
+                                    on_tap=local_clicked(char.id),
                                     mouse_cursor=ft.MouseCursor.CLICK,
                                     expand=True,
                                 ),
@@ -852,7 +857,7 @@ class GamePlayPage(QPage):
                     )
                 ).root_component
             )
-            char_map[char.get_id()] = selection_indicator
+            char_map[char.id] = selection_indicator
 
         background.add_children((
             QItem(
@@ -1041,8 +1046,11 @@ class GamePlayPage(QPage):
             for elem in choices:
                 for _ in range(choices[elem]):
                     prompt.append(elem)
-            choices = self._curr_state.get_player(self._home_pid).get_dice()
-            sample_solution = choices.basically_satisfy(requirement).to_dict()
+            choices = self._curr_state.get_player(self._home_pid).dice
+            sample_solution = choices.smart_selection(
+                requirement,
+                self._curr_state.get_player(self._home_pid).characters,
+            ).to_dict()
         assert isinstance(choices, ds.ActualDice)
 
         is_down: bool = False
@@ -1413,10 +1421,10 @@ class GamePlayPage(QPage):
             height_pct=height_pct,
             anchor=QAnchor(left=0.0, top=top_pct),
         )
-        chars = game_state.get_player(pid).get_characters()
+        chars = game_state.get_player(pid).characters
         item.add_flet_comp(ft.Row(
             controls=[
-                self._character(item, pid, char.get_id(), game_state).root_component
+                self._character(item, pid, char.id, game_state).root_component
                 for char in chars
             ],
             expand=True,
@@ -1463,7 +1471,7 @@ class GamePlayPage(QPage):
                         self._support(support, pid, game_state),
                     ),
                 )
-                for i, support in enumerate(game_state.get_player(pid).get_supports())
+                for i, support in enumerate(game_state.get_player(pid).supports)
             ]),
         )
         return item
@@ -1488,7 +1496,7 @@ class GamePlayPage(QPage):
                         self._summon(summon, pid, game_state),
                     ),
                 )
-                for i, summon in enumerate(game_state.get_player(pid).get_summons())
+                for i, summon in enumerate(game_state.get_player(pid).summons)
             ]),
         )
         return item
@@ -1621,9 +1629,9 @@ class GamePlayPage(QPage):
             char_id: int,
             game_state: ds.GameState,
     ) -> QItem:
-        chars = game_state.get_player(pid).get_characters()
+        chars = game_state.get_player(pid).characters
         char = chars.just_get_character(char_id)
-        is_active = char.get_id() == chars.get_active_character_id()
+        is_active = char.id == chars.get_active_character_id()
         inactive_top, active_top = (0.1, 0.0) if pid is self._home_pid else (0.0, 0.1)
         item = QItem(
             object_name=f"char-{pid}-{char_id}-{char.name()}",
@@ -1670,7 +1678,7 @@ class GamePlayPage(QPage):
                 ),
             ),
         )
-        if char.defeated():
+        if char.is_defeated():
             char_card.add_children((
                 QItem(
                     expand=True,
@@ -1678,7 +1686,7 @@ class GamePlayPage(QPage):
                 ),
             ))
             return item
-        if char.get_hp() == 0:
+        if char.hp == 0:
             char_card.add_children((
                 QItem(
                     expand=True,
@@ -1701,19 +1709,13 @@ class GamePlayPage(QPage):
                     bgcolor=ft.colors.with_opacity(0.7, "#000000"),
                 ),
             ))
-            hidden_statuses = char.get_hidden_statuses()
-            equipment_statues = char.get_equipment_statuses()
-            character_statuses = char.get_character_statuses()
+            hidden_statuses = char.hidden_statuses
+            character_statuses = char.character_statuses
             content = '\n'.join((
                 "<Implicit Statuses>",
                 '\n'.join([
                     "    - " + s
                     for s in hidden_statuses.dict_str()
-                ]),
-                "\n<Equipment Statuses>",
-                '\n'.join([
-                    "    - " + s
-                    for s in equipment_statues.dict_str()
                 ]),
                 "\n<Character Statuses>",
                 '\n'.join([
@@ -1723,7 +1725,7 @@ class GamePlayPage(QPage):
             ))
             optional_content = ""
             if is_active:
-                combat_status = game_state.get_player(pid).get_combat_statuses()
+                combat_status = game_state.get_player(pid).combat_statuses
                 optional_content = '\n'.join((
                     "\n\n<Combat Statuses>",
                     '\n'.join([
@@ -1767,7 +1769,7 @@ class GamePlayPage(QPage):
         ))
         hp_item.add_children(
             QText(
-                text=f"{char.get_hp()}",
+                text=f"{char.hp}",
                 text_colour="#FFFFFF",
                 size_rel_height=0.6,
                 rotate=ft.Rotate(angle=-0.25 * pi, alignment=ft.alignment.center),
@@ -1776,7 +1778,7 @@ class GamePlayPage(QPage):
                 align=QAlign(x_pct=0.5, y_pct=0.5),
             )
         )
-        equipments: ds.EquipmentStatuses = char.get_equipment_statuses()
+        equipments: ds.Statuses = char.character_statuses
         eq_map = {
             dsst.TalentEquipmentStatus: "Talent",
             dsst.WeaponEquipmentStatus: "Weapon",
@@ -1804,14 +1806,14 @@ class GamePlayPage(QPage):
         ])
 
         energy_height = 0.13
-        for energy in range(1, char.get_max_energy() + 1):
+        for energy in range(1, char.max_energy + 1):
             char_card.add_children((
                 QItem(
                     height_pct=energy_height,
                     width_height_pct=1.0,
                     align=QAlign(x_pct=1.0, y_pct=(1.5 * energy - 0.5) * energy_height),
                     colour=ft.colors.with_opacity(
-                        1, "#EEEE00" if energy <= char.get_energy() else "#A28E75"
+                        1, "#EEEE00" if energy <= char.energy else "#A28E75"
                     ),
                     border=ft.border.all(2, "#DBC9AF"),
                     rotate=ft.Rotate(angle=0.25 * pi, alignment=ft.alignment.center),
@@ -1842,7 +1844,7 @@ class GamePlayPage(QPage):
                             )
                         )
                     )[0].root_component
-                    for elem in char.get_elemental_aura()
+                    for elem in char.elemental_aura
                 ],
                 expand=True,
                 alignment=ft.MainAxisAlignment.SPACE_EVENLY,
@@ -1855,7 +1857,7 @@ class GamePlayPage(QPage):
                 anchor=QAnchor(left=0.0, bottom=0.99),
             ),
         ))
-        for i, status in enumerate(char.get_character_statuses()):
+        for i, status in enumerate(char.character_statuses):
             if i > 3:
                 break
             char_status_row_item.add_children((
@@ -1874,7 +1876,7 @@ class GamePlayPage(QPage):
                     anchor=QAnchor(left=0.0, top=1.01),
                 ),
             ))
-            for i, status in enumerate(game_state.get_player(pid).get_combat_statuses()):
+            for i, status in enumerate(game_state.get_player(pid).combat_statuses):
                 if i > 3:
                     break
                 combat_status_row_item.add_children((
@@ -1892,7 +1894,7 @@ class GamePlayPage(QPage):
             pid: ds.Pid,
             game_state: ds.GameState,
     ) -> QItem:
-        dice = game_state.get_player(pid).get_dice()
+        dice = game_state.get_player(pid).dice
         if pid is self._home_pid:
             die_list: list[ds.Element] = []
             for elem, num in dice.readonly_dice_ordered(game_state.get_player(pid)).items():
@@ -1930,7 +1932,7 @@ class GamePlayPage(QPage):
                     QText(
                         expand=True,
                         colour=ft.colors.with_opacity(0.2, "#000000"),
-                        text=f"{game_state.get_player(pid).get_deck_cards().num_cards()}",
+                        text=f"{game_state.get_player(pid).deck_cards.num_cards()}",
                         text_colour="#FFFFFF",
                         size_rel_height=0.2,
                     ),
@@ -2044,7 +2046,7 @@ class GamePlayPage(QPage):
                     QText(
                         expand=True,
                         colour=ft.colors.with_opacity(0.2, "#000000"),
-                        text=f"{game_state.get_player(pid).get_deck_cards().num_cards()}",
+                        text=f"{game_state.get_player(pid).deck_cards.num_cards()}",
                         text_colour="#FFFFFF",
                         size_rel_height=0.2,
                     ),
@@ -2103,8 +2105,8 @@ class GamePlayPage(QPage):
         )
         if pid is not self._home_pid:
             return item
-        active_char = game_state.get_player(pid).get_characters().get_active_character()
-        if active_char is None or active_char.defeated():
+        active_char = game_state.get_player(pid).characters.get_active_character()
+        if active_char is None or active_char.is_defeated():
             return item
         item.add_children(QItem(
             height_pct=0.48,
@@ -2227,7 +2229,7 @@ class GamePlayPage(QPage):
             children=(
             ),
         )
-        if not isinstance(game_state.get_phase(), game_state.get_mode().action_phase):
+        if not isinstance(game_state.phase, game_state.mode.action_phase):
             return item
         item.add_children(
             end_round_frame := QItem(
@@ -2282,7 +2284,7 @@ class GamePlayPage(QPage):
             pid: ds.Pid,
             game_state: ds.GameState,
     ) -> QItem:
-        cards = game_state.get_player(pid).get_hand_cards()
+        cards = game_state.get_player(pid).hand_cards
         card_list: list[type[ds.Card]] = []
         for card in cards:
             for _ in range(cards[card]):

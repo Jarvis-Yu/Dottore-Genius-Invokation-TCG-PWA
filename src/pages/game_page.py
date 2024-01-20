@@ -18,11 +18,12 @@ from __future__ import annotations
 from typing import Any
 
 import flet as ft
+import dgisim
 
 from ..components.navigation_bar import NavBar
 from ..components.wip import WIP
 from ..context import AppContext, GamePlaySettings
-from ..qcomp import QItem, QAnchor, QInset
+from ..qcomp import QItem, QAnchor, QInset, QText, QAlign
 from ..routes import Route
 from .base import QPage
 
@@ -62,6 +63,14 @@ class GamePage(QPage):
             # ),
         ])
         self.add_flet_comp(self._responsive_rows)
+        self.add_children(QText(
+            text=f"used dgisim version {dgisim.__version__}",
+            text_colour="#888888",
+            width_pct=1,
+            height_pct=0.03,
+            anchor=QAnchor(left=0, bottom=1),
+            size_rel_height=0.5,
+        ))
 
     def goto_random_PVE(self, _: Any) -> None:
         self._context.game_mode = GamePlaySettings.from_random_PVE()

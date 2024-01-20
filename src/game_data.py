@@ -199,11 +199,16 @@ class Match:
         #         ).build()
         #     ).build()
 
-        # from dgisim import cd as dscd
-        # if dscd.GeneralsAncientHelm not in node.stop_state.get_player1().get_hand_cards():
+        # temporary add card
+        # from dgisim import card as dscd
+        # if dscd.BlessingOfTheDivineRelicsInstallation not in node.stop_state.player1.hand_cards:
         #     node.stop_state = node.stop_state.factory().f_player1(
         #         lambda p1: p1.factory().f_hand_cards(
-        #             lambda hcs: hcs.add(dscd.GeneralsAncientHelm)
+        #             lambda hcs: hcs.add(
+        #                 dscd.BlessingOfTheDivineRelicsInstallation
+        #             ).add(
+        #                 dscd.GildedDreams
+        #             )
         #         ).build()
         #     ).build()
 
