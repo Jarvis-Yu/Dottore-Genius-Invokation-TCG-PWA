@@ -19,6 +19,7 @@ from enum import Enum
 from typing import Any
 
 import flet as ft
+from qlet import QItem, QAlign, QAnchor
 
 from .components.navigation_bar import NavBar
 from .context import AppContext, Orientation, Size
@@ -27,7 +28,6 @@ from .pages.deck_page import DeckPage
 from .pages.game.play_page import GamePlayPage
 from .pages.game_page import GamePage
 from .pages.not_found_page import NotFoundPage
-from .qcomp import QItem, QAlign, QAnchor
 from .routes import Route
 
 

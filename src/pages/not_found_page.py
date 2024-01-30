@@ -17,10 +17,10 @@ Dottore Genius Invokation PWA. If not, see <https://www.gnu.org/licenses/>
 from __future__ import annotations
 
 import flet as ft
+from qlet import QItem, QAnchor, QInset
 
 from ..components.navigation_bar import NavBar
 from ..context import AppContext
-from ..qcomp import QItem, QAnchor, QInset
 from .base import QPage
 
 
@@ -31,8 +31,7 @@ class NotFoundPage(QPage):
         # context.page.navigation_bar = NavBar(context=self._context)
         context.page.navigation_bar.visible = True
         self.inset = QInset(bottom=context.settings.nav_bar_height)
-        self._recalc_size()
-        self._update_internal_container_on_size()
+        self.update_size()
         self.add_flet_comp(ft.Row(
             controls=[
                 ft.Column(

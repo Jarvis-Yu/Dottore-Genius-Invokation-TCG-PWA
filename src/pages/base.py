@@ -16,8 +16,9 @@ Dottore Genius Invokation PWA. If not, see <https://www.gnu.org/licenses/>
 """
 from abc import ABC, abstractmethod
 
+from qlet import QItem
+
 from ..context import AppContext
-from ..qcomp import QItem
 
 __all__ = ["QPage"]
 

@@ -17,9 +17,9 @@ Dottore Genius Invokation PWA. If not, see <https://www.gnu.org/licenses/>
 from __future__ import annotations
 
 import flet as ft
+from qlet import QItem, QAnchor, QInset
 
 from ..components.wip import WIP
-from ..qcomp import QItem, QAnchor, QInset
 from ..context import AppContext
 from .base import QPage
 

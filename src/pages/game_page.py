@@ -19,11 +19,11 @@ from typing import Any
 
 import flet as ft
 import dgisim
+from qlet import QItem, QAnchor, QInset, QText, QAlign
 
 from ..components.navigation_bar import NavBar
 from ..components.wip import WIP
 from ..context import AppContext, GamePlaySettings
-from ..qcomp import QItem, QAnchor, QInset, QText, QAlign
 from ..routes import Route
 from .base import QPage
 
@@ -34,8 +34,7 @@ class GamePage(QPage):
         context.page.bgcolor = self._context.settings.view_bg_colour
         context.page.navigation_bar.visible = True
         self.inset = QInset(bottom=context.settings.nav_bar_height)
-        self._recalc_size()
-        self._update_internal_container_on_size()
+        self.update_size()
         button_col = {"sm": 6, "lg": 4, "xl": 3}
         self._responsive_rows = ft.ResponsiveRow([
             ft.ElevatedButton(

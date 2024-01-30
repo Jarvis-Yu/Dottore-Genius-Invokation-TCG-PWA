@@ -26,10 +26,10 @@ from dgisim import status as dsst
 from dgisim import summon as dssm
 from dgisim import support as dssp
 from dgisim.agents import RandomAgent
+from qlet import QItem, QAnchor, QAlign, QImage, QText
 
 from ...components.wip import WIP
 from ...components.centre import make_centre
-from ...qcomp import QItem, QAnchor, QAlign, QImage, QText
 from ...context import AppContext, GamePlaySettings, PlayerSettings
 from ...routes import Route
 from ..base import QPage
